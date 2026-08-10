@@ -1,0 +1,8 @@
+sigla,nome_portugues,nome_latin,hemisferio_visivel,estrela_principal,quantidade_estrelas_brilhantes,fonte_dados,status_validacao
+Ori,Órion,Orion,Ambos,Betelgeuse,7,IAU (International Astronomical Union),Validado
+Cen,Centauro,Centaurus,Sul,Alpha Centauri,10,IAU (International Astronomical Union),Validado
+Lyr,Lira,Lyra,Norte,Vega,5,IAU (International Astronomical Union),Validado
+Aqr,Aquário,Aquarius,Ambos,Sadalsuud,4,IAU (International Astronomical Union),Validado
+Peg,Pégaso,Pegasus,Norte,Enif,9,IAU (International Astronomical Union),Validado
+UMa,Ursa Maior,Ursa Major,Norte,Alioth,7,IAU (International Astronomical Union),Validado
+Cru,Cruzeiro do Sul,Crux,Sul,Acrux,5,IAU (International Astronomical Union),Validado

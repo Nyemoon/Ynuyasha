@@ -1,0 +1,11 @@
+identificador_principal,tipo_objeto,ascensao_reta_ra,declinacao_dec,tipo_espectral,paralaxe_mas,fonte_dados,status_validacao
+M   1,SNR,83.6324,22.0174,N/A,N/A,SIMBAD / CDS Strasbourg,Validado
+M  31,AGN,10.684708333333333,41.268750000000004,N/A,N/A,SIMBAD / CDS Strasbourg,Validado
+M  42,HII,83.8201,-5.3876,N/A,N/A,SIMBAD / CDS Strasbourg,Validado
+Cl Melotte   22,OpC,56.600833333333334,24.11388888888889,N/A,7.364,SIMBAD / CDS Strasbourg,Validado
+M  57,PN,283.39623652463,33.029134246539996,DA(O?),1.2696,SIMBAD / CDS Strasbourg,Validado
+* alf Tau,LP?,68.9801627900154,16.5093023507718,K5+III,48.94,SIMBAD / CDS Strasbourg,Validado
+* alf Ori,s*r,88.79293899077537,7.407063995272694,M1-M2Ia-Iab,6.55,SIMBAD / CDS Strasbourg,Validado
+NAME Proxima Centauri,PM*,217.42894222160578,-62.67949018907555,M5.5Ve,768.0665,SIMBAD / CDS Strasbourg,Validado
+* alf CMa,SB*,101.28715533333335,-16.71611586111111,A0mA1Va,379.21,SIMBAD / CDS Strasbourg,Validado
+* alf Lyr,dS*,279.234734787025,38.783688956244,A0V,130.23,SIMBAD / CDS Strasbourg,Validado

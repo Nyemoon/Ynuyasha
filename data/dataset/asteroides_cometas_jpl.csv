@@ -1,0 +1,21 @@
+nome_corpo,tipo_objeto,diametro_km,potencialmente_perigoso,objeto_proximo_terra,classe_orbital,fonte_dados,status_validacao
+433 Eros (A898 PA),an,16.84,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+719 Albert (A911 TB),an,N/A,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+887 Alinda (A918 AA),an,4.2,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1036 Ganymed (A924 UB),an,37.675,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1221 Amor (1932 EA1),an,1.0,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1566 Icarus (1949 MA),an,1.0,Sim,Sim,APO,NASA JPL Small-Body Database,Validado
+1580 Betulia (1950 KA),an,5.8,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1620 Geographos (1951 RA),an,2.56,Sim,Sim,APO,NASA JPL Small-Body Database,Validado
+1627 Ivar (1929 SH),an,9.12,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1685 Toro (1948 OA),an,3.4,Não,Sim,APO,NASA JPL Small-Body Database,Validado
+1862 Apollo (1932 HA),an,1.5,Sim,Sim,APO,NASA JPL Small-Body Database,Validado
+1863 Antinous (1948 EA),an,2.1,Não,Sim,APO,NASA JPL Small-Body Database,Validado
+1864 Daedalus (1971 FA),an,3.7,Não,Sim,APO,NASA JPL Small-Body Database,Validado
+1865 Cerberus (1971 UA),an,1.2,Não,Sim,APO,NASA JPL Small-Body Database,Validado
+1866 Sisyphus (1972 XA),an,8.48,Não,Sim,APO,NASA JPL Small-Body Database,Validado
+1915 Quetzalcoatl (1953 EA),an,0.5,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1916 Boreas (1953 RA),an,3.5,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1917 Cuyo (1968 AA),an,5.7,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1943 Anteros (1973 EC),an,2.3,Não,Sim,AMO,NASA JPL Small-Body Database,Validado
+1980 Tezcatlipoca (1950 LA),an,4.3,Não,Sim,AMO,NASA JPL Small-Body Database,Validado

@@ -1,0 +1,32 @@
+nome_planeta,nome_estrela,raio_terrestre,massa_terrestre,temperatura_equilibrio_k,fluxo_insolacao_terra,zona_habitavel_estimada,fonte_dados,status_validacao
+51 Peg b,51 Peg,14.1,193.87532827,1328.93,506.1775,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+55 Cnc e,55 Cnc,1.875,7.99,1958.0,2657.8322,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+55 Cnc f,55 Cnc,7.59,44.812,277.07,0.9879,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+70 Vir b,70 Vir,12.6,2380.45,525.24,12.2183,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+GJ 1214 b,GJ 1214,2.733,8.41,567.0,17.2,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+GJ 581 c,GJ 581,2.5,6.81,346.13,2.3985,Potencialmente Habitável (Otimista),NASA Exoplanet Archive / Algoritmo PHL,Validado
+GJ 667 C c,GJ 667 C,1.77,N/A,N/A,0.8774,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+HD 189733 b,HD 189733,12.66617,359.1479,1209.0,356.0,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+HD 209458 b,HD 209458,15.58051,232.0159,1459.0,587.098,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+HR 8799 b,HR 8799,13.0,2000.0,1200.0,0.0011,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+K2-18 b,K2-18,2.37,8.92,284.0,1.005,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+KELT-9 b,KELT-9,21.70058664,915.34581216,3921.0,44900.0,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-10 b,Kepler-10,1.47,3.24,2188.0,3741.78,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-11 c,Kepler-11,2.87,2.9,786.0,107.224,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-16 b,Kepler-16,8.4493,105.833,205.9,0.2517,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-1649 c,Kepler-1649,1.06,N/A,234.0,0.75,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-186 f,Kepler-186,1.17,N/A,177.0,0.3,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-22 b,Kepler-22,2.1,9.1,279.0,1.013,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-442 b,Kepler-442,1.34,N/A,241.0,0.66,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-452 b,Kepler-452,1.63,N/A,265.0,1.1,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+Kepler-62 f,Kepler-62,1.41,35.0,208.0,0.5,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+Proxima Cen b,Proxima Cen,1.02,N/A,218.0,0.641,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+TOI-700 d,TOI-700,1.073,N/A,268.8,0.85,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+TRAPPIST-1 b,TRAPPIST-1,1.116,1.374,397.6,4.153,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+TRAPPIST-1 c,TRAPPIST-1,1.097,1.308,339.7,2.214,Potencialmente Habitável (Otimista),NASA Exoplanet Archive / Algoritmo PHL,Validado
+TRAPPIST-1 d,TRAPPIST-1,0.788,0.388,286.2,1.115,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+TRAPPIST-1 e,TRAPPIST-1,0.92,0.692,249.7,0.646,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+TRAPPIST-1 f,TRAPPIST-1,1.045,1.039,217.7,0.373,Potencialmente Habitável (Conservadora),NASA Exoplanet Archive / Algoritmo PHL,Validado
+TRAPPIST-1 g,TRAPPIST-1,1.129,1.321,197.3,0.252,Potencialmente Habitável (Otimista),NASA Exoplanet Archive / Algoritmo PHL,Validado
+TRAPPIST-1 h,TRAPPIST-1,0.755,0.326,171.7,0.144,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado
+WASP-12 b,WASP-12,22.02564708,467.2101,2601.0,8220.584,Fora da Zona Habitável,NASA Exoplanet Archive / Algoritmo PHL,Validado

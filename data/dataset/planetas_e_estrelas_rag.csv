@@ -1,0 +1,32 @@
+nome_planeta,nome_estrela,ano_descoberta,metodo_descoberta,raio_terrestre,massa_terrestre,temperatura_planeta_k,tipo_espectral_estrela,temperatura_estrela_k,raio_solar_estrela,massa_solar_estrela,distancia_parsecs,fonte_dados,status_validacao
+51 Peg b,51 Peg,1995,Radial Velocity,14.1,193.87532827,1328.93,G5V,5761.0,1.19,1.07,15.4614,NASA Exoplanet Archive (pscomppars),Validado
+55 Cnc e,55 Cnc,2004,Radial Velocity,1.875,7.99,1958.0,G8 V,5172.0,0.943,0.905,12.5855,NASA Exoplanet Archive (pscomppars),Validado
+55 Cnc f,55 Cnc,2007,Radial Velocity,7.59,44.812,277.07,G8 V,5198.0,0.98,1.015,12.5855,NASA Exoplanet Archive (pscomppars),Validado
+70 Vir b,70 Vir,1996,Radial Velocity,12.6,2380.45,525.24,G5V,5495.0,1.89,1.09,17.9011,NASA Exoplanet Archive (pscomppars),Validado
+GJ 1214 b,GJ 1214,2009,Transit,2.733,8.41,567.0,M4 V,3101.0,0.2162,0.182,14.6427,NASA Exoplanet Archive (pscomppars),Validado
+GJ 581 c,GJ 581,2007,Radial Velocity,2.5,6.81,346.13,M3.0 V,3500.0,0.302,0.295,6.2981,NASA Exoplanet Archive (pscomppars),Validado
+GJ 667 C c,GJ 667 C,2013,Radial Velocity,1.77,N/A,N/A,M1.5 V,3350.0,N/A,0.33,7.24396,NASA Exoplanet Archive (pscomppars),Validado
+HD 189733 b,HD 189733,2005,Radial Velocity,12.66617,359.1479,1209.0,K2 V,5052.0,0.75,0.79,19.7638,NASA Exoplanet Archive (pscomppars),Validado
+HD 209458 b,HD 209458,1999,Radial Velocity,15.58051,232.0159,1459.0,G0 V,6091.0,1.19,1.23,48.3016,NASA Exoplanet Archive (pscomppars),Validado
+HR 8799 b,HR 8799,2008,Imaging,13.0,2000.0,1200.0,A5 V,7204.58,1.49338,1.5,41.2441,NASA Exoplanet Archive (pscomppars),Validado
+K2-18 b,K2-18,2015,Transit,2.37,8.92,284.0,M2.5 V,3457.0,0.411,0.359,38.0266,NASA Exoplanet Archive (pscomppars),Validado
+KELT-9 b,KELT-9,2017,Transit,21.70058664,915.34581216,3921.0,A,9270.0,2.418,2.32,204.455,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-10 b,Kepler-10,2011,Transit,1.47,3.24,2188.0,N/A,5708.0,1.065,0.91,185.506,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-11 c,Kepler-11,2010,Transit,2.87,2.9,786.0,N/A,5663.0,1.065,0.961,646.346,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-16 b,Kepler-16,2011,Transit,8.4493,105.833,205.9,N/A,4450.0,0.6489,0.6897,75.0852,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-1649 c,Kepler-1649,2020,Transit,1.06,N/A,234.0,N/A,3240.0,0.2317,0.1977,92.1913,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-186 f,Kepler-186,2014,Transit,1.17,N/A,177.0,M1,3755.0,0.523,0.544,177.594,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-22 b,Kepler-22,2011,Transit,2.1,9.1,279.0,G5 V,5596.0,0.869,0.857,194.642,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-442 b,Kepler-442,2015,Transit,1.34,N/A,241.0,N/A,4402.0,0.598,0.609,365.965,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-452 b,Kepler-452,2015,Transit,1.63,N/A,265.0,G2,5757.0,1.11,1.037,551.727,NASA Exoplanet Archive (pscomppars),Validado
+Kepler-62 f,Kepler-62,2013,Transit,1.41,35.0,208.0,K2 V,4925.0,0.64,0.69,300.874,NASA Exoplanet Archive (pscomppars),Validado
+Proxima Cen b,Proxima Cen,2016,Radial Velocity,1.02,N/A,218.0,M5.5 V,2900.0,0.141,0.1221,1.30119,NASA Exoplanet Archive (pscomppars),Validado
+TOI-700 d,TOI-700,2020,Transit,1.073,N/A,268.8,M2.5 V,3459.0,0.421,0.415,31.1265,NASA Exoplanet Archive (pscomppars),Validado
+TRAPPIST-1 b,TRAPPIST-1,2016,Transit,1.116,1.374,397.6,M8.0 V,2566.0,0.1192,0.0898,12.42988881,NASA Exoplanet Archive (pscomppars),Validado
+TRAPPIST-1 c,TRAPPIST-1,2016,Transit,1.097,1.308,339.7,M8.0 V,2566.0,0.1192,0.0898,12.42988881,NASA Exoplanet Archive (pscomppars),Validado
+TRAPPIST-1 d,TRAPPIST-1,2016,Transit,0.788,0.388,286.2,M8.0 V,2566.0,0.1192,0.0898,12.42988881,NASA Exoplanet Archive (pscomppars),Validado
+TRAPPIST-1 e,TRAPPIST-1,2017,Transit,0.92,0.692,249.7,M8.0 V,2566.0,0.1192,0.0898,12.42988881,NASA Exoplanet Archive (pscomppars),Validado
+TRAPPIST-1 f,TRAPPIST-1,2017,Transit,1.045,1.039,217.7,M8.0 V,2566.0,0.1192,0.0898,12.42988881,NASA Exoplanet Archive (pscomppars),Validado
+TRAPPIST-1 g,TRAPPIST-1,2017,Transit,1.129,1.321,197.3,M8.0 V,2566.0,0.1192,0.0898,12.42988881,NASA Exoplanet Archive (pscomppars),Validado
+TRAPPIST-1 h,TRAPPIST-1,2017,Transit,0.755,0.326,171.7,M8.0 V,2566.0,0.1192,0.0898,12.42988881,NASA Exoplanet Archive (pscomppars),Validado
+WASP-12 b,WASP-12,2008,Transit,22.02564708,467.2101,2601.0,N/A,6265.0,1.69,1.325,427.246,NASA Exoplanet Archive (pscomppars),Validado
