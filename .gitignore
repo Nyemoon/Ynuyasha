@@ -1,0 +1,28 @@
+# Vectorstore (embeddings calculados, regeneravel)
+data/vectorstore/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# Tool caches
+.ruff_cache/
+.pytest_cache/
+
+# Logs e SO
+*.log
+.DS_Store
