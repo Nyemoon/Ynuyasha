@@ -69,6 +69,12 @@ agente_Ynuyasha/
 │       ├── retrieval.py         # Busca semântica por similaridade
 │       ├── geração.py           # Geração de resposta (Groq/Ollama)
 │       ├── agente.py            # Pipeline completo (retrieval → geração)
+│       ├── agente_ia.py         # Agente ReAct com tool-calling (grafo LangGraph + memória)
+│       ├── ferramentas.py       # 9 ferramentas que leem os CSVs diretamente
+│       ├── memoria.py           # Checkpointer SQLite/MemorySaver + novo_thread_id
+│       ├── avaliacao.py         # Benchmark, métricas, relatório Markdown, log/feedback
+│       ├── banner.py            # Banner compartilhado (terminal + interface web)
+│       ├── testar_velocidade.py # Benchmark da velocidade dos embeddings
 │       └── status.py            # Diagnóstico (motor, Ollama, vectorstore, sincronia dos datasets)
 └── testes/                      # Scripts de checagem de dados + testes pytest
 ```
@@ -149,7 +155,7 @@ registrado nos metadados de observabilidade.
 
 ### Pré-requisitos
 
-1. **Python 3.10+** instalado.
+1. **Python 3.14+** instalado.
 2. **Ollama** instalado e rodando (`ollama serve`).
 3. Modelo de embedding baixado: `ollama pull nomic-embed-text`.
 4. **Arquivo `.env`** na raiz (veja abaixo).
@@ -323,6 +329,7 @@ Além do terminal, o Ynuyasha agora pode ser usado por um **navegador** com uma 
 
 ### Recursos
 
+- 🖼️ **Banner do Ynuyasha** — o mesmo banner do terminal (cachorrinho + nome em ASCII colorido, via `src/tratamento/banner.py`) é exibido no topo da página.
 - 💬 **Chat com streaming** — a resposta aparece token a token, renderizada em Markdown.
 - 🔍 **Painel de contexto RAG** — os 5 pedaços recuperados (fonte, linha e relevância) ficam visíveis para auditoria; quando a pergunta não consta na base, o painel informa que nenhum trecho relevante foi encontrado.
 - 💡 **Perguntas sugeridas** — exemplos clicáveis para começar a conversa.
@@ -506,6 +513,7 @@ python -m pytest testes/test_memoria.py -q
 - Chat com streaming + Markdown ✔
 - Painel de contexto RAG (fontes e relevância) ✔
 - Status do sistema e perguntas sugeridas ✔
+- Banner do Ynuyasha compartilhado com o terminal (ASCII colorido) ✔
 - Lançamento via `python interface/app.py` e opção 7 do menu CLI ✔
 
 **Fase G1 concluída** — agente ReAct com tool-calling (Groq):
