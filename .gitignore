@@ -1,6 +1,13 @@
 # Vectorstore (embeddings calculados, regeneravel)
 data/vectorstore/
 
+# Checkpoints do agente (estado efêmero de conversas, regenerável)
+data/checkpoints/
+
+# Logs de uso e feedback (dados de uso, não versionados)
+data/avaliacao/turnos_log.csv
+data/avaliacao/feedback.csv
+
 # Python
 __pycache__/
 *.py[cod]
