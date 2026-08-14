@@ -21,7 +21,7 @@ A base de conhecimento é montada a partir de datasets reais obtidos de fontes c
 - **ESA Gaia DR3** — estrelas próximas com paralaxe medida
 - **SIMBAD / CDS Strasbourg** — estrelas notáveis, nebulosas e eventos extremos
 - **NASA JPL Small-Body Database** — asteroides e cometas
-- **PHL (Planetary Habitability Laboratory)** — estimativas de zona habitável
+- **Classificação própria de habitabilidade** — heurística baseada em temperatura de equilíbrio e insolação (parâmetros vindos do NASA Exoplanet Archive), inspirada em critérios usados pelo PHL (Planetary Habitability Laboratory), mas não é o algoritmo oficial do PHL
 - **IAU** — constelações oficiais e definições de termos científicos
 
 ---
@@ -261,7 +261,7 @@ python -m src.tratamento.testar_velocidade
 > * **TRAPPIST-1 e**: com uma temperatura de equilíbrio de 249,7 K e um fluxo de insolação de 0,646 vezes o da Terra.
 > * **TRAPPIST-1 d**: com uma temperatura de equilíbrio de 286,2 K e um fluxo de insolação de 1,115 vezes o da Terra.
 >
-> Ambos os planetas têm uma classificação de **Potencialmente Habitável (Conservadora)**, de acordo com os dados do **NASA Exoplanet Archive** e do **Algoritmo PHL**.
+> Ambos os planetas têm uma classificação de **Potencialmente Habitável (Conservadora)**, de acordo com os dados do **NASA Exoplanet Archive** e com a **classificação própria de habitabilidade** deste projeto (heurística por temperatura de equilíbrio, inspirada em critérios do PHL).
 >
 > **## Conclusão**
 > Esses planetas podem ser considerados como candidatos para abrigar vida, devido às suas condições favoráveis. No entanto, é importante notar que a habitabilidade de um planeta depende de muitos fatores, incluindo a composição atmosférica, a presença de água líquida e a estabilidade climática.
@@ -310,7 +310,7 @@ python -m src.tratamento.testar_velocidade
 | Dataset | Fonte | Conteúdo |
 |---|---|---|
 | `planetas_e_estrelas_rag.csv` | NASA Exoplanet Archive | 31 exoplanetas e suas estrelas |
-| `habitabilidade_exoplanetas.csv` | NASA / PHL | Habitabilidade e zona habitável |
+| `habitabilidade_exoplanetas.csv` | NASA Exoplanet Archive (parâmetros) + classificação própria | Habitabilidade e zona habitável (heurística por temperatura, inspirada no PHL) |
 | `glossario_astronomico_conceitos.csv` | IAU / NASA | Termos científicos e definições |
 | `constelacoes_iau.csv` | IAU | 7 constelações oficiais |
 | `asteroides_cometas_jpl.csv` | NASA JPL | Asteroides NEOs e cometas |
@@ -532,7 +532,7 @@ python -m pytest testes/test_memoria.py -q
 - Fallback automático: se a ferramenta específica não achar, tenta `buscar_na_base` ✔
 - Fallback automático por erro da Groq (quota 429, `tool_use_failed`, rede) → RAG/Ollama local ✔
 - **Gate de ancoragem**: respostas sem dados/citação da base são substituídas pela recusa (sem conhecimento próprio do modelo); citações no plural são aceitas e citações forjadas são bloqueadas ✔
-- Log por turno em CSV (desligado por padrão; `YNUVASHA_LOG_TURNOS=true`) ✔
+- Log por turno em CSV (desligado por padrão; `YNUYASHA_LOG_TURNOS=true`) ✔
 - Feedback 👍/👎 na interface web → `data/avaliacao/feedback.csv` ✔
 - Robustez de embeddings (timeout/keep-alive, cache de query, warm-up no boot) + lock anti-rebuild concorrente ✔
 
@@ -582,7 +582,7 @@ resposta) em `data/avaliacao/turnos_log.csv`. **Desligado por padrão**:
 
 ```env
 # .env — ative para registrar cada turno
-YNUVASHA_LOG_TURNOS=true
+YNUYASHA_LOG_TURNOS=true
 ```
 
 Use `false` (ou deixe sem a variável) para manter o comportamento silencioso.
