@@ -86,13 +86,15 @@ def test_groq_disponivel_placeholder(monkeypatch):
 # ─── grafo ──────────────────────────────────────────────────────────────────
 
 
-def test_criar_grafo_singleton_cacheado():
+def test_criar_grafo_singleton_cacheado(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_qualquer_chave")
     grafo_a = agente_ia._criar_grafo()
     grafo_b = agente_ia._criar_grafo()
     assert grafo_a is grafo_b
 
 
-def test_criar_grafo_injetado_nao_usa_cache():
+def test_criar_grafo_injetado_nao_usa_cache(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_qualquer_chave")
     grafo_a = agente_ia._criar_grafo()
     grafo_b = agente_ia._criar_grafo(FakeLLM(), ferramentas.FERRAMENTAS)
     assert grafo_b is not grafo_a
