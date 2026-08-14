@@ -1,0 +1,7 @@
+# Nomes de módulo com acentos portugueses são intencionais no projeto
+# (ex.: `geração.py`, `consultas_constelações.py`) e são importados por esse
+# nome exato; renomear quebraria os imports, então o N999 é desabilitado aqui.
+[lint.per-file-ignores]
+"src/**/geração.py" = ["N999"]
+"src/consultas/consultas_constelações.py" = ["N999"]
+"src/consultas/glossário_atronomy.py" = ["N999"]
