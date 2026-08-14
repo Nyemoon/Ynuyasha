@@ -1,14 +1,36 @@
 import json
 import os
+from pathlib import Path
+
+from filelock import FileLock
 from langchain_core.load import dumpd
 from langchain_core.vectorstores import InMemoryVectorStore
-from pathlib import Path
-from src.tratamento.loading import obter_pedacos
+
 from src.tratamento.embeddings import embeddings_model
+from src.tratamento.loading import calcular_fingerprint_datasets, obter_pedacos
 
 CAMINHO_VECTORSTORE = Path(__file__).resolve().parents[2] / "data" / "vectorstore" / "embeddings_store.json"
+CAMINHO_FINGERPRINT = CAMINHO_VECTORSTORE.parent / "fingerprint_datasets.txt"
+CAMINHO_LOCK = CAMINHO_VECTORSTORE.parent / "rebuild.lock"
 BATCH_SIZE = 10  # número de requisições ao Ollama, como temos 190 pedaços, vão ser embeddings em blocos de 10.
 CHECKPOINT_INTERVAL = 5  # salva a vectorstore em disco a cada N lotes (N * BATCH_SIZE documentos)
+REBUILD_TIMEOUT = 3600  # segundos máximos que outra execução pode estar reconstruindo
+
+
+def salvar_fingerprint() -> None:
+    """Grava o hash dos datasets que originaram o índice atual em disco."""
+    CAMINHO_FINGERPRINT.parent.mkdir(parents=True, exist_ok=True)
+    CAMINHO_FINGERPRINT.write_text(calcular_fingerprint_datasets(), encoding="utf-8")
+
+
+def ler_fingerprint() -> str | None:
+    """Lê o hash gravado na última reconstrução; None se nunca gravado."""
+    if not CAMINHO_FINGERPRINT.exists():
+        return None
+    try:
+        return CAMINHO_FINGERPRINT.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
 
 
 def _dump_json_compacto(valor: object, nivel: int = 0) -> str:
@@ -74,34 +96,67 @@ def criar_ou_carregar_vectorstore(forcar_rebuild: bool = False) -> InMemoryVecto
 
     vectorstore_existente = None if forcar_rebuild else _carregar_se_completa(total)
     if vectorstore_existente is not None:
+        # Só evita reconstrução concorrente se já houver um índice completo.
         return vectorstore_existente
 
-    print("Criando nova vectorstore...")
-    vectorstore = InMemoryVectorStore(embedding=embeddings_model)
-
+    # Lock de reconstrução: impede que duas execuções (ex.: o Gradio bootando
+    # enquanto um rebuild em background está em andamento) embebam os mesmos
+    # pedaços em paralelo — o que sobrecarrega o Ollama e corrompe o arquivo.
+    # Se outro processo está reconstruindo, espera até ele terminar (até o
+    # timeout) e então carrega o resultado completo.
+    lock = FileLock(str(CAMINHO_LOCK))
+    lock_obtido = False
     try:
-        for i in range(0, total, BATCH_SIZE):
-            batch = pedacos[i:i + BATCH_SIZE]
-            vectorstore.add_documents(batch)
-            lote = i // BATCH_SIZE + 1
-            print(f"[{i + len(batch)}/{total}] embedados")
+        lock.acquire(timeout=REBUILD_TIMEOUT)
+        lock_obtido = True
+    except TimeoutError:
+        print("Rebuild já em andamento por outro processo e não concluiu")
+        print(f"dentro de {REBUILD_TIMEOUT}s; prosseguindo com o índice atual no disco.")
+    try:
+        # Outra execução pode ter completado o rebuild enquanto esperávamos o lock.
+        vectorstore_existente = None if forcar_rebuild else _carregar_se_completa(total)
+        if vectorstore_existente is not None:
+            return vectorstore_existente
 
-            # Dump intra-loop com checkpoint: persiste o progresso a cada
-            # CHECKPOINT_INTERVAL lotes (ou no último lote), usando escrita
-            # atômica (.tmp + os.replace) para evitar arquivos corrompidos.
-            if lote % CHECKPOINT_INTERVAL == 0 or i + len(batch) >= total:
-                _persistir(vectorstore)
-                print(f"[checkpoint] vectorstore salva em {CAMINHO_VECTORSTORE}")
-    except Exception:
-        # Garante que o progresso parcial fique salvo em disco mesmo se o
-        # Ollama falhar no meio — mas note que _carregar_se_completa() vai
-        # detectar esse arquivo como incompleto na próxima execução e
-        # recriar do zero, então nada de errado é assumido silenciosamente.
-        _persistir(vectorstore)
-        raise
+        if not lock_obtido:
+            # Não podemos reconstruir em paralelo com outro processo: carrega o
+            # que estiver no disco (mesmo incompleto) para não bloquear o RAG.
+            print("Aguardando o rebuild em andamento; usando o índice parcial disponível.")
+            if CAMINHO_VECTORSTORE.exists():
+                return InMemoryVectorStore.load(str(CAMINHO_VECTORSTORE), embedding=embeddings_model)
+            return InMemoryVectorStore(embedding=embeddings_model)
 
-    print(f"Vectorstore salva em {CAMINHO_VECTORSTORE}")
-    return vectorstore
+        print("Criando nova vectorstore...")
+        vectorstore = InMemoryVectorStore(embedding=embeddings_model)
+
+        try:
+            for i in range(0, total, BATCH_SIZE):
+                batch = pedacos[i:i + BATCH_SIZE]
+                vectorstore.add_documents(batch)
+                lote = i // BATCH_SIZE + 1
+                print(f"[{i + len(batch)}/{total}] embedados")
+
+                # Dump intra-loop com checkpoint: persiste o progresso a cada
+                # CHECKPOINT_INTERVAL lotes (ou no último lote), usando escrita
+                # atômica (.tmp + os.replace) para evitar arquivos corrompidos.
+                if lote % CHECKPOINT_INTERVAL == 0 or i + len(batch) >= total:
+                    _persistir(vectorstore)
+                    print(f"[checkpoint] vectorstore salva em {CAMINHO_VECTORSTORE}")
+        except Exception:
+            # Garante que o progresso parcial fique salvo em disco mesmo se o
+            # Ollama falhar no meio — mas note que _carregar_se_completa() vai
+            # detectar esse arquivo como incompleto na próxima execução e
+            # recriar do zero, então nada de errado é assumido silenciosamente.
+            _persistir(vectorstore)
+            raise
+
+        print(f"Vectorstore salva em {CAMINHO_VECTORSTORE}")
+        salvar_fingerprint()
+        print(f"Fingerprint dos datasets gravado em {CAMINHO_FINGERPRINT}")
+        return vectorstore
+    finally:
+        if lock_obtido:
+            lock.release()
 
 
 if __name__ == "__main__":

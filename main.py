@@ -1,15 +1,10 @@
-import json
 import os
 import random
 import re
 import subprocess
 import sys
-import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
-import pyfiglet
 import questionary
 from dotenv import load_dotenv
 from prompt_toolkit.styles import Style
@@ -23,12 +18,11 @@ from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
-FONTE_BANNER = "slant"
-CAMINHO_ENV = Path(__file__).resolve().parent / ".env"
-load_dotenv(CAMINHO_ENV)
+from src.tratamento.banner import gerar_linhas_banner
+from src.tratamento.status import verificar_status
 
-CAMINHO_VECTORSTORE = Path(__file__).resolve().parent / "data" / "vectorstore" / "embeddings_store.json"
-PLACEHOLDER_CHAVE = "sua_chave_aqui"
+CAMINHO_ENV = Path(__file__).resolve().parent / ".env"
+load_dotenv(CAMINHO_ENV, override=True)
 
 # ─── Tema de cores centralizado ────────────────────────────────────────────
 TEMA = Theme(
@@ -62,37 +56,17 @@ SPINNERS_TEMATICOS = ["moon", "earth", "star", "dots"]
 
 # ─── Banner ─────────────────────────────────────────────────────────────────
 
-ARTE_CACHORRO_BRUTA = [
-    "  /\\_/\\  ",
-    " ( o.o ) ",
-    " >  w  < ",
-    "/|     |\\",
-    "(_|   |_)",
-    "  U   U  ",
-]
-_LARGURA_CACHORRO = max(len(linha) for linha in ARTE_CACHORRO_BRUTA)
-ARTE_CACHORRO = [linha.ljust(_LARGURA_CACHORRO) for linha in ARTE_CACHORRO_BRUTA]
-_LINHA_VAZIA_CACHORRO = " " * _LARGURA_CACHORRO
-
-
 def mostrar_banner() -> None:
     """Exibe o banner (cachorrinho + nome Ynuyasha) centralizado no terminal."""
-    linhas = pyfiglet.figlet_format("Ynuyasha", font=FONTE_BANNER).rstrip("\n").split("\n")
-    largura_nome = max(len(linha) for linha in linhas)
-    
-    altura = max(len(linhas), len(ARTE_CACHORRO))
-    arte_nome = [""] * (altura - len(linhas)) + list(linhas)
-    cachorro = [_LINHA_VAZIA_CACHORRO] * (altura - len(ARTE_CACHORRO)) + ARTE_CACHORRO
+    linhas = gerar_linhas_banner()
+    largura_bloco = max(len(cachorro) + 2 + len(nome) for cachorro, nome in linhas)
 
-    # Largura total do bloco combinado (cachorrinho + 2 espaços de respiro + texto figlet)
-    largura_bloco = _LARGURA_CACHORRO + 2 + largura_nome
-    
     # Calcula a margem esquerda com base na largura atual do terminal
     largura_terminal = CONSOLE.width
     margem_esquerda = max(0, (largura_terminal - largura_bloco) // 2)
     espacos_margem = " " * margem_esquerda
 
-    for linha_nome, linha_cachorro in zip(arte_nome, cachorro):
+    for linha_cachorro, linha_nome in linhas:
         linha = Text()
         linha.append(espacos_margem)
         linha.append(linha_cachorro, style="magenta")
@@ -103,57 +77,13 @@ def mostrar_banner() -> None:
 
 # ─── Status do sistema ───────────────────────────────────────────────────────
 
-def _groq_configurada() -> bool:
-    chave = os.getenv("GROQ_API_KEY", "").strip()
-    return bool(chave) and chave != PLACEHOLDER_CHAVE
-
-
-def _modelo_fallback() -> str:
-    return os.getenv("OLLAMA_FALLBACK_MODEL", "smollm2:360m")
-
-
-_OLLAMA_URL = "http://localhost:11434/api/tags"
-_OLLAMA_CACHE_TTL = 30.0
-_ultima_verificacao_ollama = 0.0
-_cache_ollama_online = False
-
-
-def _ollama_online(forcar: bool = False) -> bool:
-    global _ultima_verificacao_ollama, _cache_ollama_online
-    agora = time.monotonic()
-    if not forcar and (agora - _ultima_verificacao_ollama) < _OLLAMA_CACHE_TTL:
-        return _cache_ollama_online
-    try:
-        with urllib.request.urlopen(_OLLAMA_URL, timeout=2) as resp:
-            _cache_ollama_online = resp.status == 200
-    except (urllib.error.URLError, OSError):
-        _cache_ollama_online = False
-    _ultima_verificacao_ollama = agora
-    return _cache_ollama_online
-
-
-def _contar_documentos() -> int | None:
-    if not CAMINHO_VECTORSTORE.exists():
-        return None
-    try:
-        with open(CAMINHO_VECTORSTORE, encoding="utf-8") as f:
-            return len(json.load(f))
-    except (OSError, json.JSONDecodeError):
-        return None
-
-
-def verificar_status(forcar_ollama: bool = False) -> dict:
-    groq = _groq_configurada()
-    return {
-        "geracao": (
-            f"Groq ({os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')})"
-            if groq
-            else f"Fallback Ollama ({_modelo_fallback()})"
-        ),
-        "groq_configurada": groq,
-        "ollama_online": _ollama_online(forcar=forcar_ollama),
-        "documentos": _contar_documentos(),
-    }
+def _texto_sincronia(status: dict) -> str:
+    sincronizado = status["datasets_sincronizados"]
+    if sincronizado is True:
+        return "[sucesso]✔ Sincronizada[/sucesso]"
+    if sincronizado is False:
+        return "[erro]✖ Desatualizada (reconstrua a vectorstore)[/erro]"
+    return "[aviso]⚠ Sem referência (faça rebuild para validar)[/aviso]"
 
 
 def exibir_painel_status(status: dict) -> None:
@@ -161,7 +91,7 @@ def exibir_painel_status(status: dict) -> None:
     texto_docs = f"{docs} documento(s)" if docs is not None else "[aviso]não construída[/aviso]"
 
     tabela = Table(box=box.ROUNDED, title="[bold cyan]STATUS DO SISTEMA[/bold cyan]", title_justify="left", expand=True)
-    tabela.add_column("Componente", style="bold magenta", width=18)
+    tabela.add_column("Componente", style="bold magenta", width=22)
     tabela.add_column("Situação", style="white")
     
     tabela.add_row("Motor de Geração", status["geracao"])
@@ -169,10 +99,16 @@ def exibir_painel_status(status: dict) -> None:
     status_groq = "[sucesso]✔ Configurada[/sucesso]" if status["groq_configurada"] else "[erro]✖ Ausente[/erro]"
     tabela.add_row("Chave Groq API", status_groq)
 
+    tabela.add_row("Agente de IA", status["agente"])
+
     status_ollama = "[sucesso]✔ Online[/sucesso]" if status["ollama_online"] else "[erro]✖ Offline[/erro]"
     tabela.add_row("Servidor Ollama", status_ollama)
 
     tabela.add_row("Base Vetorial", texto_docs)
+    tabela.add_row("Limiar RAG", f"{status['rag_limiar']:.2f}")
+    tabela.add_row("Modelo de Embedding", status["modelo_embedding"])
+    tabela.add_row("Fallback Ollama", status["fallback"])
+    tabela.add_row("Datasets", _texto_sincronia(status))
     
     CONSOLE.print(tabela)
 
@@ -390,6 +326,8 @@ def exibir_menu(status: dict) -> str:
         Choice("Iniciar agente interativo (Conversa contínua)", value="3"),
         Choice("Fazer uma pergunta única (Consulta rápida)", value="4"),
         Choice("Executar fluxo completo (Consultas + Vectorstore + Agente)", value="5"),
+        Separator(" 🌐 INTERFACE WEB "),
+        Choice("Iniciar interface web (Gradio)", value="7"),
         Separator(" ⚙️  SISTEMA "),
         Choice("Ver diagnóstico completo do sistema", value="6"),
         Choice("Sair da aplicação", value="0"),
@@ -404,6 +342,26 @@ def exibir_menu(status: dict) -> str:
         style=ESTILO_MENU,
     ).ask()
     return selecionado or "0"
+
+
+def iniciar_interface_web() -> None:
+    """Inicia o servidor Gradio em subprocesso (bloqueia até ser encerrado)."""
+    CONSOLE.clear()
+    CONSOLE.rule("[destaque]🌐 INTERFACE WEB (GRADIO)[/destaque]")
+    CONSOLE.print()
+    caminho_interface = Path(__file__).resolve().parent / "interface" / "app.py"
+    if not caminho_interface.exists():
+        CONSOLE.print(f"[erro]✖ Erro:[/erro] Interface não encontrada em {caminho_interface}")
+        _pausar()
+        return
+    CONSOLE.print("[dim]Acesse no navegador em http://127.0.0.1:7860[/dim]")
+    CONSOLE.print("[dim]Pressione Ctrl+C no servidor para retornar ao menu.[/dim]")
+    CONSOLE.print()
+    try:
+        subprocess.run([sys.executable, str(caminho_interface)])
+    except KeyboardInterrupt:
+        pass
+    _pausar()
 
 
 def main() -> None:
@@ -426,6 +384,8 @@ def main() -> None:
                 iniciar_agente_interativo()
             elif opcao == "6":
                 exibir_status_detalhado()
+            elif opcao == "7":
+                iniciar_interface_web()
             elif opcao == "0":
                 CONSOLE.clear()
                 CONSOLE.print(Panel("[bold]🌙 Encerrando o Ynuyasha. Até logo![/bold]", border_style="dim", box=box.ROUNDED))
