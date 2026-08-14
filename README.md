@@ -97,7 +97,7 @@ agente_Ynuyasha/
 | Tecnologia | Uso |
 |---|---|
 | **Python 3.14** | Linguagem principal |
-| **LangChain** | Orquestração do pipeline RAG (core, community, splitter) |
+| **LangChain** | Orquestração do pipeline RAG (core, splitter) |
 | **Ollama** | Embeddings (`nomic-embed-text`) e fallback de geração |
 | **Groq** | Geração principal (`llama-3.3-70b-versatile`) |
 | **Rich** | Interface visual no terminal (tabelas, painéis, Markdown) |
@@ -171,11 +171,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # 3. Configurar o .env (exemplo)
-GROQ_API_KEY=sua_chave_aqui
-GROQ_MODEL=llama-3.3-70b-versatile
-GROQ_TEMPERATURE=0.3
-# Limiar mínimo de relevância do retriever (opcional, padrão 0.65)
-RAG_LIMIAR_RELEVANCIA=0.65
+cp .env.example .env
+# Depois edite o .env e preencha a GROQ_API_KEY (opcional)
 
 # 4. Iniciar o Ynuyasha
 python main.py

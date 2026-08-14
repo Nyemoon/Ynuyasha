@@ -1,9 +1,9 @@
 import os
 
 import numpy as np
-from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from langchain_core.vectorstores.utils import _cosine_similarity
+from rank_bm25 import BM25Okapi
 
 from src.tratamento.base_vetorial import criar_ou_carregar_vectorstore
 from src.tratamento.embeddings import embeddings_model
@@ -47,15 +47,36 @@ def _obter_vectorstore():
     return _vectorstore
 
 
-def _obter_bm25() -> BM25Retriever:
+class BM25Recuperador:
+    """Retriever léxico BM25 local, substituto do BM25Retriever do
+    langchain-community (que está em sunset).
+
+    Reproduz o comportamento original: tokenização por quebra de espaços,
+    BM25Okapi e `.invoke()` devolvendo os `k` documentos mais relevantes.
+    """
+
+    def __init__(self, documentos, vectorizer):
+        self.docs = list(documentos)
+        self.vectorizer = vectorizer
+        self.k = TOP_CANDIDATOS
+
+    @classmethod
+    def from_documents(cls, documentos):
+        corpus = [doc.page_content.split() for doc in documentos]
+        return cls(documentos, BM25Okapi(corpus))
+
+    def invoke(self, pergunta):
+        return self.vectorizer.get_top_n(pergunta.split(), self.docs, n=self.k)
+
+
+def _obter_bm25() -> BM25Recuperador:
     """Recupera o retriever lexical BM25, construído uma única vez.
 
     Usa os mesmos pedaços (com templates semânticos) da Fase de ingestão.
     """
     global _bm25
     if _bm25 is None:
-        _bm25 = BM25Retriever.from_documents(obter_pedacos())
-        _bm25.k = TOP_CANDIDATOS
+        _bm25 = BM25Recuperador.from_documents(obter_pedacos())
     return _bm25
 
 
@@ -112,7 +133,7 @@ def recuperar_contexto(
     pergunta: str,
     k: int = 5,
     vectorstore=None,
-    bm25: BM25Retriever | None = None,
+    bm25: BM25Recuperador | None = None,
 ) -> list[tuple[Document, float]]:
     """Busca os trechos mais relevantes combinando busca semântica e lexical.
 
