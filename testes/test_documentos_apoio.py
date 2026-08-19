@@ -178,10 +178,14 @@ def test_guard_corpus_real_confere_linhas_do_benchmark():
 # ─── smoke: a base principal (dataset/vectorstore) não é invalidada ──────────
 
 
-def test_loading_nao_invalidado_pelo_apoio():
+def test_loading_nao_invalidado_pelo_apoio(monkeypatch, tmp_path):
     from src.tratamento import loading
-    from src.tratamento.base_vetorial import ler_fingerprint
+    from src.tratamento.base_vetorial import ler_fingerprint, salvar_fingerprint
 
+    monkeypatch.setattr(
+        "src.tratamento.base_vetorial.CAMINHO_FINGERPRINT", tmp_path / "fingerprint.txt"
+    )
+    salvar_fingerprint()
     pedacos = loading.obter_pedacos()
     assert pedacos
     fingerprint_atual = loading.calcular_fingerprint_datasets()
