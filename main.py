@@ -354,15 +354,17 @@ def iniciar_interface_web() -> None:
         CONSOLE.print(f"[erro]✖ Erro:[/erro] Interface não encontrada em {caminho_interface}")
         _pausar()
         return
-    CONSOLE.print("[dim]Acesse no navegador em http://127.0.0.1:7860[/dim]")
+    from interface.portas import procurar_porta_livre
+
+    porta = procurar_porta_livre()
+    CONSOLE.print(f"[destaque]➜ Acesse no navegador em http://127.0.0.1:{porta}[/destaque]")
     CONSOLE.print("[dim]Pressione Ctrl+C no servidor para retornar ao menu.[/dim]")
     CONSOLE.print()
     try:
-        subprocess.run([sys.executable, str(caminho_interface)])
+        subprocess.run([sys.executable, str(caminho_interface), "--port", str(porta)])
     except KeyboardInterrupt:
         pass
     _pausar()
-
 
 def main() -> None:
     try:

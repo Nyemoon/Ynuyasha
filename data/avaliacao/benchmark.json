@@ -1,199 +1,500 @@
 {
   "versao": "1.0",
   "criado_em": "2026-08-10",
-  "descricao": "Benchmark offline do Ynuyasha: casos de ferramentas com linhas esperadas (índices 0-based dos CSVs) e perguntas fora da base (teste de honestidade). A seção 'retrieval' documenta a verdade de base do RAG (exige Ollama/vectorstore).",
+  "descricao": "Benchmark offline do Ynuyasha: casos de retrieval com linhas esperadas (índices 0-based dos CSVs) e perguntas fora da base (teste de honestidade). A seção 'retrieval' documenta a verdade de base do RAG (exige Ollama/vectorstore).",
   "ferramentas": [
     {
       "pergunta": "O que é um parsec?",
       "ferramenta": "consultar_glossario",
-      "args": {"termo": "parsec"},
+      "args": {
+        "termo": "parsec"
+      },
       "arquivo": "glossario_astronomico_conceitos.csv",
-      "linhas_esperadas": [1]
+      "linhas_esperadas": [
+        1
+      ]
     },
     {
       "pergunta": "Explique o que é um buraco negro.",
       "ferramenta": "consultar_glossario",
-      "args": {"termo": "buraco negro"},
+      "args": {
+        "termo": "buraco negro"
+      },
       "arquivo": "glossario_astronomico_conceitos.csv",
-      "linhas_esperadas": [7]
+      "linhas_esperadas": [
+        7
+      ]
     },
     {
       "pergunta": "Como funciona o método de trânsito?",
       "ferramenta": "consultar_glossario",
-      "args": {"termo": "método de trânsito"},
+      "args": {
+        "termo": "método de trânsito"
+      },
       "arquivo": "glossario_astronomico_conceitos.csv",
-      "linhas_esperadas": [2]
+      "linhas_esperadas": [
+        2
+      ]
     },
     {
       "pergunta": "Quais são os planetas do sistema TRAPPIST-1?",
       "ferramenta": "consultar_planetas",
-      "args": {"termo": "TRAPPIST-1"},
+      "args": {
+        "termo": "TRAPPIST-1"
+      },
       "arquivo": "planetas_e_estrelas_rag.csv",
-      "linhas_esperadas": [23, 24, 25, 26, 27]
+      "linhas_esperadas": [
+        23,
+        24,
+        25,
+        26,
+        27
+      ]
     },
     {
       "pergunta": "Informações sobre os planetas 55 Cnc e e 55 Cnc f.",
       "ferramenta": "consultar_planetas",
-      "args": {"termo": "55 Cnc"},
+      "args": {
+        "termo": "55 Cnc"
+      },
       "arquivo": "planetas_e_estrelas_rag.csv",
-      "linhas_esperadas": [1, 2]
+      "linhas_esperadas": [
+        1,
+        2
+      ]
     },
     {
       "pergunta": "Qual o método de descoberta do Kepler-452 b?",
       "ferramenta": "consultar_planetas",
-      "args": {"termo": "Kepler-452 b"},
+      "args": {
+        "termo": "Kepler-452 b"
+      },
       "arquivo": "planetas_e_estrelas_rag.csv",
-      "linhas_esperadas": [19]
+      "linhas_esperadas": [
+        19
+      ]
     },
     {
       "pergunta": "O TRAPPIST-1 e está na zona habitável?",
       "ferramenta": "consultar_habitabilidade",
-      "args": {"termo": "TRAPPIST-1 e"},
+      "args": {
+        "termo": "TRAPPIST-1 e"
+      },
       "arquivo": "habitabilidade_exoplanetas.csv",
-      "linhas_esperadas": [26]
+      "linhas_esperadas": [
+        26
+      ]
     },
     {
       "pergunta": "Quais planetas estão na zona habitável?",
       "ferramenta": "consultar_habitabilidade",
-      "args": {"termo": "zona habitável"},
+      "args": {
+        "termo": "zona habitável"
+      },
       "arquivo": "habitabilidade_exoplanetas.csv",
-      "linhas_esperadas": [2, 5, 10, 14, 15]
+      "linhas_esperadas": [
+        2,
+        5,
+        10,
+        14,
+        15
+      ]
     },
     {
       "pergunta": "Dados do asteroide 433 Eros.",
       "ferramenta": "consultar_asteroides",
-      "args": {"termo": "Eros"},
+      "args": {
+        "termo": "Eros"
+      },
       "arquivo": "asteroides_cometas_jpl.csv",
-      "linhas_esperadas": [0, 18]
+      "linhas_esperadas": [
+        0,
+        18
+      ]
     },
     {
       "pergunta": "Quais asteroides são potencialmente perigosos?",
       "ferramenta": "consultar_asteroides",
-      "args": {"termo": "potencialmente perigosos"},
+      "args": {
+        "termo": "potencialmente perigosos"
+      },
       "arquivo": "asteroides_cometas_jpl.csv",
-      "linhas_esperadas": [5, 7, 10]
+      "linhas_esperadas": [
+        5,
+        7,
+        10
+      ]
     },
     {
       "pergunta": "Liste os asteroides próximos da Terra.",
       "ferramenta": "consultar_asteroides",
-      "args": {"termo": "próximos da Terra"},
+      "args": {
+        "termo": "próximos da Terra"
+      },
       "arquivo": "asteroides_cometas_jpl.csv",
-      "linhas_esperadas": [0, 1, 2, 3, 4]
+      "linhas_esperadas": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
     },
     {
       "pergunta": "Qual a estrela principal da constelação de Órion?",
       "ferramenta": "consultar_constelacao",
-      "args": {"termo": "Ori"},
+      "args": {
+        "termo": "Ori"
+      },
       "arquivo": "constelacoes_iau.csv",
-      "linhas_esperadas": [0]
+      "linhas_esperadas": [
+        0
+      ]
     },
     {
       "pergunta": "Em que hemisfério se vê o Cruzeiro do Sul?",
       "ferramenta": "consultar_constelacao",
-      "args": {"termo": "Cruzeiro do Sul"},
+      "args": {
+        "termo": "Cruzeiro do Sul"
+      },
       "arquivo": "constelacoes_iau.csv",
-      "linhas_esperadas": [6]
+      "linhas_esperadas": [
+        6
+      ]
     },
     {
       "pergunta": "Que tipo de objeto é M 31?",
       "ferramenta": "consultar_objeto_simbad",
-      "args": {"termo": "M 31"},
+      "args": {
+        "termo": "M 31"
+      },
       "arquivo": "estrelas_e_objetos_simbad.csv",
-      "linhas_esperadas": [1]
+      "linhas_esperadas": [
+        1
+      ]
     },
     {
       "pergunta": "Qual o tipo espectral da estrela Vega (alf Lyr)?",
       "ferramenta": "consultar_objeto_simbad",
-      "args": {"termo": "alf Lyr"},
+      "args": {
+        "termo": "alf Lyr"
+      },
       "arquivo": "estrelas_e_objetos_simbad.csv",
-      "linhas_esperadas": [9]
+      "linhas_esperadas": [
+        9
+      ]
     },
     {
       "pergunta": "Qual a magnitude da estrela Gaia 5853498713190525696?",
       "ferramenta": "consultar_estrelas_gaia",
-      "args": {"termo": "5853498713190525696"},
+      "args": {
+        "termo": "5853498713190525696"
+      },
       "arquivo": "estrelas_proximas_gaia.csv",
-      "linhas_esperadas": [0]
+      "linhas_esperadas": [
+        0
+      ]
     },
     {
       "pergunta": "Liste os quasares SDSS.",
       "ferramenta": "consultar_eventos",
-      "args": {"termo": "QSO"},
+      "args": {
+        "termo": "QSO"
+      },
       "arquivo": "eventos_transientes_extremos.csv",
-      "linhas_esperadas": [0, 1, 2, 3, 4]
+      "linhas_esperadas": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
     },
     {
       "pergunta": "Quais eventos são púlsares?",
       "ferramenta": "consultar_eventos",
-      "args": {"termo": "PSR"},
+      "args": {
+        "termo": "PSR"
+      },
       "arquivo": "eventos_transientes_extremos.csv",
-      "linhas_esperadas": [14, 15, 16, 17, 18]
+      "linhas_esperadas": [
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
     },
     {
       "pergunta": "Quais eventos são supernovas?",
       "ferramenta": "consultar_eventos",
-      "args": {"termo": "SN"},
+      "args": {
+        "termo": "SN"
+      },
       "arquivo": "eventos_transientes_extremos.csv",
-      "linhas_esperadas": [28, 29, 30, 31, 32]
+      "linhas_esperadas": [
+        28,
+        29,
+        30,
+        31,
+        32
+      ]
     }
   ],
   "fora_da_base": [
     {
-      "pergunta": "Qual a capital da França?",
-      "ferramenta": "consultar_glossario",
-      "args": {"termo": "capital da França"}
+      "pergunta": "Qual a capital da França?"
     },
     {
-      "pergunta": "Qual a receita de bolo de cenoura?",
-      "ferramenta": "consultar_habitabilidade",
-      "args": {"termo": "receita de bolo"}
+      "pergunta": "Qual a receita de bolo de cenoura?"
     },
     {
-      "pergunta": "Como cuidar de um gato de estimação?",
-      "ferramenta": "consultar_asteroides",
-      "args": {"termo": "gato"}
+      "pergunta": "Como cuidar de um gato de estimação?"
     },
     {
-      "pergunta": "Quem ganhou a última Copa do Mundo?",
-      "ferramenta": "consultar_eventos",
-      "args": {"termo": "futebol"}
+      "pergunta": "Quem ganhou a última Copa do Mundo?"
     },
     {
-      "pergunta": "Qual o melhor time de futebol?",
-      "ferramenta": "consultar_constelacao",
-      "args": {"termo": "zzznada"}
+      "pergunta": "Qual o melhor time de futebol?"
     }
   ],
   "retrieval": [
     {
-      "pergunta": "planeta em zona habitável",
-      "arquivo": "habitabilidade_exoplanetas.csv",
-      "linhas_esperadas": [2, 5, 10, 14, 15]
+      "pergunta": "Liste os quasares SDSS.",
+      "arquivo": "eventos_transientes_extremos.csv",
+      "linhas_esperadas": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
     },
     {
-      "pergunta": "asteroides potencialmente perigosos",
+      "pergunta": "Quais eventos são púlsares?",
+      "arquivo": "eventos_transientes_extremos.csv",
+      "linhas_esperadas": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27
+      ]
+    },
+    {
+      "pergunta": "Quais eventos são supernovas?",
+      "arquivo": "eventos_transientes_extremos.csv",
+      "linhas_esperadas": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
+      ]
+    },
+    {
+      "pergunta": "Quais planetas estão na zona habitável?",
+      "arquivo": "habitabilidade_exoplanetas.csv",
+      "linhas_esperadas": [
+        2,
+        5,
+        10,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        24,
+        25,
+        26,
+        27,
+        28
+      ]
+    },
+    {
+      "pergunta": "Quais asteroides são potencialmente perigosos?",
       "arquivo": "asteroides_cometas_jpl.csv",
-      "linhas_esperadas": [5, 7, 10]
+      "linhas_esperadas": [
+        5,
+        7,
+        10
+      ]
     },
     {
       "pergunta": "método de descoberta do Kepler-452 b",
       "arquivo": "planetas_e_estrelas_rag.csv",
-      "linhas_esperadas": [19]
-    },
-    {
-      "pergunta": "quasares SDSS",
-      "arquivo": "eventos_transientes_extremos.csv",
-      "linhas_esperadas": [0, 1, 2, 3, 4]
+      "linhas_esperadas": [
+        19
+      ]
     },
     {
       "pergunta": "definição de parsec",
       "arquivo": "glossario_astronomico_conceitos.csv",
-      "linhas_esperadas": [1]
+      "linhas_esperadas": [
+        1
+      ]
+    },
+    {
+      "pergunta": "Qual a paralaxe da estrela Proxima Centauri?",
+      "arquivo": "estrelas_e_objetos_simbad.csv",
+      "linhas_esperadas": [
+        7
+      ]
+    },
+    {
+      "pergunta": "Liste planetas descobertos pelo método de trânsito.",
+      "arquivo": "planetas_e_estrelas_rag.csv",
+      "linhas_esperadas": [
+        4,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "k": 25
     },
     {
       "pergunta": "qual é a capital do Brasil",
       "arquivo": null,
       "linhas_esperadas": []
+    }
+  ],
+  "apoio": [
+    {
+      "pergunta": "Em que ano o Kepler-186 f foi descoberto?",
+      "arquivo": "planetas_validados.txt",
+      "linhas_esperadas": [
+        8
+      ]
+    },
+    {
+      "pergunta": "Quando o Proxima Cen b foi descoberto?",
+      "arquivo": "planetas_validados.txt",
+      "linhas_esperadas": [
+        3
+      ]
+    },
+    {
+      "pergunta": "Qual a estrela hospedeira do K2-18 b?",
+      "arquivo": "planetas_validados.txt",
+      "linhas_esperadas": [
+        18
+      ]
+    },
+    {
+      "pergunta": "O TRAPPIST-1 b e o TRAPPIST-1 e estão na lista validada? Em que anos?",
+      "arquivo": "planetas_validados.txt",
+      "linhas_esperadas": [
+        4,
+        27
+      ]
+    },
+    {
+      "pergunta": "Na tabela Planetary Systems, qual é o rótulo da coluna pl_name?",
+      "arquivos": [
+        "ps-conf-ext-mapping.csv",
+        "Exoplanet_Archive_Column_Mapping_CSV.csv"
+      ],
+      "linhas_esperadas": [
+        0
+      ]
+    },
+    {
+      "pergunta": "Qual é a coluna disc_year no Exoplanet Archive e o que ela armazena?",
+      "arquivos": [
+        "ps-conf-ext-mapping.csv",
+        "Exoplanet_Archive_Column_Mapping_CSV.csv"
+      ],
+      "linhas_esperadas": [
+        14
+      ]
+    },
+    {
+      "pergunta": "Qual coluna armazena a massa do planeta na tabela PS (pl_massj)?",
+      "arquivo": "ps-conf-ext-mapping.csv",
+      "linhas_esperadas": [
+        54
+      ]
+    },
+    {
+      "pergunta": "Na tabela Composite Parameters (retiring), qual é o rótulo da coluna fpl_name?",
+      "arquivos": [
+        "Exoplanet_Archive_Column_Mapping_CSV.csv",
+        "old-comp-new-comp-mapping.csv"
+      ],
+      "linhas_esperadas": [
+        0
+      ]
+    },
+    {
+      "pergunta": "O que representa a coluna pl_disc na tabela Confirmed Planets (retiring)?",
+      "arquivos": [
+        "Exoplanet_Archive_Column_Mapping_CSV.csv",
+        "ps-conf-ext-mapping.csv"
+      ],
+      "linhas_esperadas": [
+        14
+      ]
+    },
+    {
+      "pergunta": "Qual coluna da nova tabela PSCP corresponde à antiga fpl_name?",
+      "arquivo": "old-comp-new-comp-mapping.csv",
+      "linhas_esperadas": [
+        0
+      ]
+    },
+    {
+      "pergunta": "O que armazena a coluna pl_kepflag nas tabelas Confirmed/Composite/Extended?",
+      "arquivo": "conf-comp-ext-not-in-ps.csv",
+      "linhas_esperadas": [
+        0
+      ]
     }
   ]
 }

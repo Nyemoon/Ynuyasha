@@ -1,31 +1,27 @@
-"""Avaliação quantitativa do Ynuyasha (Fase H).
+"""Avaliação quantitativa do Ynuyasha.
 
-Roda o benchmark de `data/avaliacao/benchmark.json` em três camadas:
-  1. ferramentas — offline/determinística, via .invoke + conferência de citações
-     ("Fonte: <arquivo>, Linha <X>") contra as linhas esperadas (precisão de citação);
-  2. retrieval — via recuperar_contexto real (exige vectorstore/Ollama), comparando
-     os metadados (source, row) dos Documentos recuperados; pula com aviso se a base
-     não estiver disponível;
-  3. agente — --online roda executar_agente com Groq e valida citação/substring;
-     offline a camada de ferramenta já cobre o fluxo.
+Roda o benchmark de `data/avaliacao/benchmark.json` nas camadas de RAG:
+  1. Retrieval (RAG) — via recuperar_contexto real (exige vectorstore/Ollama),
+     comparando os metadados (source, row) dos Documentos recuperados; pula com
+     aviso se a base não estiver disponível;
+  2. Fora da base — verifica que perguntas sem trechos relevantes não geram
+     citações (honestidade).
 
 As métricas (recall@k, precisão@k, MRR, nDCG@k, hit@1) são funções puras sobre
 conjuntos/listas de chaves (source, row), o que permite testes herméticos com fakes.
 O relatório em Markdown é salvo em `data/avaliacao/resultados/`.
 
 Uso:
-    python -m src.tratamento.avaliacao            # offline (ferramentas + retrieval se houver base)
-    python -m src.tratamento.avaliacao --online   # adiciona a camada de agente (Groq)
+    python -m src.tratamento.avaliacao
 """
 
 import argparse
+import csv
 import json
 import math
 import re
 from datetime import datetime
 from pathlib import Path
-
-from src.tratamento.ferramentas import FERRAMENTAS
 
 RAIZ_PROJETO = Path(__file__).resolve().parents[2]
 CAMINHO_BENCHMARK = RAIZ_PROJETO / "data" / "avaliacao" / "benchmark.json"
@@ -34,13 +30,9 @@ CAMINHO_LOG_TURNOS = RAIZ_PROJETO / "data" / "avaliacao" / "turnos_log.csv"
 CAMINHO_FEEDBACK = RAIZ_PROJETO / "data" / "avaliacao" / "feedback.csv"
 
 PADRAO_CITACAO = re.compile(
-    r"Fonte:\s*(?P<arquivo>[^,\n]+?)\s*,\s*Linha\s*(?P<linha>\d+)",
+    r"(?:Fonte:\s*)?(?P<arquivo>[^,;\n]+?)\s*,\s*Linha\s?(?P<linha>\d+)",
     re.IGNORECASE,
 )
-
-FERRAMENTAS_MAP = {ferramenta.name: ferramenta for ferramenta in FERRAMENTAS}
-
-KEYWORDS_RECUSA = ("nenhum", "não encontrado", "nao encontrado")
 
 
 # ─── Métricas (funções puras) ─────────────────────────────────────────────────
@@ -124,19 +116,30 @@ def _resumir(metricas: list[dict]) -> dict:
 
 
 def extrair_citacoes(texto: str) -> list[tuple[str, int]]:
-    """Extrai as citações "Fonte: <arquivo>, Linha <X>" de um texto."""
+    """Extrai as citações "Fonte: <arquivo>, Linha <X>" ou "- <arquivo>, linha <N>".
+
+    Os marcadores de lista da seção '## Fontes' (ex.: "- arquivo, linha 3") são
+    removidos antes do casamento para não contaminar o nome do arquivo.
+    """
+    normalizado = re.sub(r"(?m)^[\s•>*\-]+(?=\S)", "", texto or "")
     return [
         (m.group("arquivo").strip(), int(m.group("linha")))
-        for m in PADRAO_CITACAO.finditer(texto or "")
+        for m in PADRAO_CITACAO.finditer(normalizado)
     ]
 
 
 def citacoes_esperadas(caso: dict) -> set:
-    """Chaves (arquivo, linha) esperadas; conjunto vazio para casos fora da base."""
-    arquivo = caso.get("arquivo")
-    if not arquivo:
+    """Chaves (arquivo, linha) esperadas; conjunto vazio para casos fora da base.
+
+    Um caso pode declarar `arquivos` (lista) quando a informação esperada é
+    documentada de forma idêntica em mais de um arquivo do corpus — aceitar
+    qualquer um deles é honesto, pois a resposta citada tanto faz.
+    """
+    arquivos = caso.get("arquivos") or ([caso["arquivo"]] if caso.get("arquivo") else [])
+    if not arquivos:
         return set()
-    return {(arquivo, int(linha)) for linha in caso.get("linhas_esperadas", [])}
+    linhas = caso.get("linhas_esperadas", [])
+    return {(arquivo, int(linha)) for arquivo in arquivos for linha in linhas}
 
 
 def _chaves_documentos(resultados) -> list:
@@ -144,8 +147,7 @@ def _chaves_documentos(resultados) -> list:
 
     Normaliza o `source` para o nome do arquivo (basename), pois o loading grava
     o caminho completo (ex.: .../data/dataset/glossario_astronomico_conceitos.csv)
-    enquanto o benchmark usa apenas o nome do arquivo. Isso mantém a avaliação de
-    retrieval alinhada às citações das ferramentas e portátil entre máquinas.
+    enquanto o benchmark usa apenas o nome do arquivo.
     """
     from pathlib import Path
 
@@ -158,57 +160,30 @@ def _chaves_documentos(resultados) -> list:
     return chaves
 
 
-# ─── Avaliação: ferramentas (offline) ─────────────────────────────────────────
+# ─── Avaliação: fora da base (honestidade) ────────────────────────────────────
 
 
-def avaliar_ferramentas(casos: list[dict]) -> dict:
-    """Avalia as ferramentas offline contra os casos de `linhas_esperadas`.
+def avaliar_fora_da_base(casos: list[dict], recuperar=None) -> dict:
+    """Verifica a recusa honesta via RAG: perguntas fora da base não recuperam
+    trechos relevantes (sendo assim a geração emite a recusa padrão)."""
+    if recuperar is None:
+        from src.tratamento.retrieval import recuperar_contexto
 
-    Hermético: lê apenas os CSVs locais via .invoke. Cada caso é medido pela
-    precisão de citação (fração das citações emitidas que apontam para linhas
-    esperadas) e pelo recall das linhas esperadas.
-    """
+        recuperar = recuperar_contexto
+
     detalhes = []
     for caso in casos:
-        ferramenta = FERRAMENTAS_MAP[caso["ferramenta"]]
-        resultado = ferramenta.invoke(caso["args"])
-        esperado = citacoes_esperadas(caso)
-        obtido = extrair_citacoes(resultado)
-        metricas = metricas_caso(esperado, obtido)
-        linhas_obtidas = sorted({linha for _a, linha in obtido})
-        detalhes.append(
-            {
-                "pergunta": caso["pergunta"],
-                "ferramenta": caso["ferramenta"],
-                "arquivo": caso.get("arquivo"),
-                "linhas_esperadas": sorted(caso.get("linhas_esperadas", [])),
-                "linhas_obtidas": linhas_obtidas,
-                **metricas,
-                "ok": metricas["recall"] == 1.0 and metricas["precisao"] == 1.0,
-            }
-        )
-    corretos = sum(1 for d in detalhes if d["ok"])
-    return {
-        "resumo": {**_resumir(detalhes), "casos": len(detalhes), "corretos": corretos},
-        "casos": detalhes,
-    }
-
-
-def avaliar_fora_da_base(casos: list[dict]) -> dict:
-    """Verifica a recusa honesta: sem citações e com mensagem de 'não encontrado'."""
-    detalhes = []
-    for caso in casos:
-        ferramenta = FERRAMENTAS_MAP[caso["ferramenta"]]
-        resultado = ferramenta.invoke(caso["args"])
-        citacoes = extrair_citacoes(resultado)
-        recusa_honesta = not citacoes and any(
-            palavra in resultado.lower() for palavra in KEYWORDS_RECUSA
-        )
+        pergunta = caso["pergunta"]
+        try:
+            resultados = recuperar(pergunta)
+        except Exception as erro:
+            return {"erro": str(erro)}
+        citacoes = _chaves_documentos(resultados)
+        recusa_honesta = not citacoes
         metricas = metricas_caso(set(), citacoes)
         detalhes.append(
             {
-                "pergunta": caso["pergunta"],
-                "ferramenta": caso["ferramenta"],
+                "pergunta": pergunta,
                 "recusa_honesta": recusa_honesta,
                 "citacoes": len(citacoes),
                 **metricas,
@@ -230,92 +205,84 @@ def avaliar_retrieval(
 ) -> dict:
     """Avalia o RAG comparando os metadados (source, row) recuperados.
 
-    Recupera o ranking uma única vez por pergunta (k = max(ks)) e calcula as
-    métricas @k sobre os prefixos do mesmo ranking — evita re-embedar a pergunta
-    três vezes. `recuperar` é injetável (padrão: recuperar_contexto), permitindo
-    testes herméticos. Caso a base vetorial não esteja disponível, retorna
+    Recupera o ranking uma única vez por pergunta e calcula as métricas @k
+    sobre os prefixos do mesmo ranking — evita re-embedar a pergunta várias
+    vezes. Um caso pode declarar `"k"` próprio (ex.: perguntas de enumeração
+    que precisam de mais trechos); sem isso, usa o k máximo de `ks`.
+    `recuperar` é injetável (padrão: recuperar_contexto), permitindo testes
+    herméticos. Caso a base vetorial não esteja disponível, retorna
     {"erro": ...} e a seção é pulada no relatório.
     """
     if recuperar is None:
-        from src.tratamento.retrieval import recuperar_contexto
+        from src.tratamento.retrieval import (  # noqa: PLC0415
+            recuperar_contexto,
+        )
 
         recuperar = recuperar_contexto
 
+    from src.tratamento.retrieval import k_para_pergunta  # noqa: PLC0415
+
     k_max = max(ks)
-    por_k = {k: [] for k in ks}
+    por_k = {}
     detalhes = []
     for caso in casos:
         esperado = citacoes_esperadas(caso)
+        k_caso = int(
+            caso.get("k") or k_para_pergunta(caso["pergunta"], k_max)
+        )
         linhas_por_k = {}
         try:
-            resultados = recuperar(caso["pergunta"], k=k_max)
+            resultados = recuperar(caso["pergunta"], k=k_caso)
             chaves = _chaves_documentos(resultados)
-            for k in ks:
+            k_avaliar = ks if k_caso <= k_max else (k_caso,)
+            for k in k_avaliar:
                 sub = chaves[:k]
                 linhas_por_k[k] = [linha for _a, linha in sub]
-                por_k[k].append(metricas_caso(esperado, sub))
+                por_k.setdefault(k, []).append(metricas_caso(esperado, sub))
         except Exception as erro:
             return {"erro": str(erro)}
         detalhes.append(
             {
                 "pergunta": caso["pergunta"],
-                "arquivo": caso.get("arquivo"),
+                "arquivo": caso.get("arquivo")
+                or ("/".join(caso.get("arquivos") or []) or None),
                 "linhas_esperadas": sorted(caso.get("linhas_esperadas", [])),
                 "linhas_obtidas": linhas_por_k,
             }
         )
     resumo = {
         f"k={k}": {**_resumir(por_k[k]), "casos": len(por_k[k])}
-        for k in ks
+        for k in por_k
         if por_k[k]
     }
     return {"resumo": resumo, "casos": detalhes}
 
 
-# ─── Avaliação: agente (--online) ─────────────────────────────────────────────
+# ─── Avaliação: apoio (material de apoio de data/documentos) ─────────────────
 
 
-def avaliar_agente(casos: list[dict], online: bool = False, executar=None) -> dict:
-    """Avalia a camada de agente.
+def avaliar_apoio(
+    casos: list[dict], ks: tuple[int, ...] = (1, 3, 5), recuperar=None
+) -> dict:
+    """Avalia o componente de apoio (BM25 sobre data/documentos) por pergunta.
 
-    Offline: apenas informa que a camada de ferramenta já cobre o fluxo.
-    --online: roda executar_agente (Groq) e valida que a resposta cita ao menos
-    uma linha esperada (ou recusa honesta para fora da base).
+    Mede o próprio retriever de apoio — não o pipeline combinado — pois a
+    qualificação do apoio é sobre ele encontrar o dado, não sobre a posição
+    final no contexto (o pipeline combinado tem métricas próprias). `recuperar`
+    é injetável para testes herméticos. Casos sem `arquivo`/`arquivos` (fora
+    da base) exigem que o apoio também volte vazio.
     """
-    if not online:
-        return {
-            "online": False,
-            "resumo": None,
-            "nota": "Camada de agente coberta pela avaliação de ferramentas offline.",
-        }
-    if executar is None:
-        from src.tratamento.agente_ia import executar_agente
-
-        executar = executar_agente
-
-    detalhes = []
-    for caso in casos:
-        pergunta = caso["pergunta"]
-        resposta = executar(pergunta)
-        esperado = citacoes_esperadas(caso)
-        citacoes = set(extrair_citacoes(resposta))
-        recuperou_correto = bool(citacoes & esperado) if esperado else not citacoes
-        detalhes.append(
-            {
-                "pergunta": pergunta,
-                "arquivo": caso.get("arquivo"),
-                "linhas_esperadas": sorted(caso.get("linhas_esperadas", [])),
-                "citacoes": sorted(citacoes),
-                "citacao_correta": recuperou_correto,
-                "ok": recuperou_correto,
-            }
+    if recuperar is None:
+        from src.tratamento.documentos_apoio import (  # noqa: PLC0415
+            obter_recuperador_apoio,
         )
-    corretos = sum(1 for d in detalhes if d["ok"])
-    return {
-        "online": True,
-        "resumo": {"casos": len(detalhes), "corretos": corretos},
-        "casos": detalhes,
-    }
+
+        _apoio = obter_recuperador_apoio()
+
+        def recuperar(pergunta: str, k: int):
+            return _apoio.buscar(pergunta, top_k=k, limiar=0.0)
+
+    return avaliar_retrieval(casos, ks=ks, recuperar=recuperar)
 
 
 # ─── Relatório Markdown ───────────────────────────────────────────────────────
@@ -369,8 +336,6 @@ def montar_relatorio(secoes: dict, metadados: dict) -> str:
         "",
         f"- **Data:** {metadados['data']}",
         f"- **Benchmark:** `{metadados['benchmark']}`",
-        f"- **Modo:** {metadados['modo']}",
-        f"- **Agente online (Groq):** {'sim' if metadados['online'] else 'não'}",
         "",
         "## Resumo",
         "",
@@ -383,9 +348,6 @@ def montar_relatorio(secoes: dict, metadados: dict) -> str:
             continue
         if "erro" in secao:
             blocos += [f"## {nome}", "", f"_Não executada: {secao['erro']}_", ""]
-            continue
-        if secao.get("online") is False:
-            blocos += [f"## {nome}", "", secao.get("nota", ""), ""]
             continue
         casos = secao.get("casos", [])
         if not casos:
@@ -433,7 +395,6 @@ def salvar_relatorio(
 
 def _append_csv(caminho: Path, cabecalho: list[str], linha: list) -> None:
     """Cria (com cabeçalho) e anexa uma linha em um CSV."""
-    import csv
 
     caminho.parent.mkdir(parents=True, exist_ok=True)
     novo = not caminho.exists()
@@ -448,26 +409,26 @@ def registrar_turno(
     pergunta: str,
     resposta: str,
     *,
-    ferramentas_chamadas: int,
     latencia_s: float,
     citou_fonte: bool,
     modo: str,
+    apoio: bool = False,
     caminho: Path | None = None,
 ) -> None:
     """Registra um turno de conversa em CSV (silencioso em caso de erro).
 
-    Usado pela camada de observabilidade quando `YNUVASHA_LOG_TURNOS=true`.
+    Usado pela camada de observabilidade quando `YNUYASHA_LOG_TURNOS=true`.
     `caminho` é injetável para testes herméticos.
     """
     try:
         _append_csv(
             caminho or CAMINHO_LOG_TURNOS,
-            ["timestamp", "modo", "ferramentas_chamadas", "citou_fonte", "latencia_s", "pergunta", "resposta"],
+            ["timestamp", "modo", "citou_fonte", "apoio", "latencia_s", "pergunta", "resposta"],
             [
                 datetime.now().isoformat(timespec="seconds"),
                 modo,
-                ferramentas_chamadas,
                 citou_fonte,
+                apoio,
                 f"{latencia_s:.3f}",
                 (pergunta or "").replace("\n", " "),
                 (resposta or "").replace("\n", " "),
@@ -509,22 +470,18 @@ def _carregar_benchmark(caminho: Path | None = None) -> dict:
 
 
 def executar_avaliacao(
-    benchmark: dict | None = None, online: bool = False, caminho: Path | None = None
+    benchmark: dict | None = None, caminho: Path | None = None
 ) -> dict:
     """Roda as avaliações e devolve as seções para o relatório."""
     dados = benchmark or _carregar_benchmark(caminho)
 
     secoes = {
-        "Ferramentas (offline)": avaliar_ferramentas(dados.get("ferramentas", [])),
+        "Retrieval (RAG)": avaliar_retrieval(dados.get("retrieval", [])),
+        "Apoio (material de apoio)": avaliar_apoio(dados.get("apoio", [])),
         "Fora da base (honestidade)": avaliar_fora_da_base(
             dados.get("fora_da_base", [])
         ),
-        "Retrieval (RAG)": avaliar_retrieval(dados.get("retrieval", [])),
     }
-    if online:
-        casos_agente = dados.get("ferramentas", []) + dados.get("fora_da_base", [])
-        secoes["Agente (--online)"] = avaliar_agente(casos_agente, online=True)
-
     return secoes
 
 
@@ -537,19 +494,18 @@ def _imprimir_resumo(secoes: dict) -> None:
             continue
         resumo = secao.get("resumo")
         if resumo is None:
-            print(f"• {nome}: {secao.get('nota', '')}")
             continue
-        partes = [f"{chave}: {_fmt_float(valor)}" for chave, valor in resumo.items()]
-        print(f"• {nome}: " + ", ".join(partes))
+        if "recall" in resumo:
+            partes = [f"{chave}: {_fmt_float(valor)}" for chave, valor in resumo.items()]
+            print(f"• {nome}: " + ", ".join(partes))
+        else:
+            for k, sub in resumo.items():
+                partes = [f"{chave}: {_fmt_float(valor)}" for chave, valor in sub.items()]
+                print(f"• {nome} ({k}): " + ", ".join(partes))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Avaliação quantitativa do Ynuyasha")
-    parser.add_argument(
-        "--online",
-        action="store_true",
-        help="Roda também a camada de agente via Groq (requer GROQ_API_KEY)",
-    )
     parser.add_argument(
         "--benchmark",
         type=Path,
@@ -558,7 +514,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    secoes = executar_avaliacao(online=args.online, caminho=args.benchmark)
+    secoes = executar_avaliacao(caminho=args.benchmark)
 
     print("=== Resumo da avaliação ===")
     _imprimir_resumo(secoes)
@@ -566,8 +522,6 @@ def main() -> None:
     metadados = {
         "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "benchmark": args.benchmark or CAMINHO_BENCHMARK,
-        "modo": "online" if args.online else "offline",
-        "online": args.online,
     }
     caminho = salvar_relatorio(secoes, metadados)
     print(f"\nRelatório salvo em: {caminho}")
