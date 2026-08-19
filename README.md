@@ -1,8 +1,12 @@
 # 🐕 Ynuyasha — Agente RAG de Astronomia
 
-> **Ynuyasha** é um agente de inteligência artificial baseado em **RAG (Retrieval-Augmented Generation)** especializado em **astronomia**. Ele consulta uma base de conhecimento construída a partir de fontes científicas reais e responde em **português do Brasil**, de forma clara, acolhedora e descritiva, com **fontes citadas**.
+![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)
+![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)
 
----
+> **Ynuyasha** é um agente de inteligência artificial baseado em **RAG (Retrieval-Augmented Generation)** especializado em **astronomia**. Ele consulta uma base de conhecimento construída a partir de fontes científicas reais e responde em **português do Brasil**, de forma clara, acolhedora e descritiva, com **fontes citadas**.
+>
+> **Status atual**: Fase M concluída — todas as features principais implementadas e testadas.
 
 ## 📋 Descrição Geral
 
@@ -32,17 +36,21 @@ A base de conhecimento é montada a partir de datasets reais obtidos de fontes c
 │  APIs        │    │  src/consultas/      │    │  data/dataset/          │
 │  Astronômicas│ ──▶│  8 scripts de coleta │ ──▶│  8 datasets (CSV)       │
 └──────────────┘    └──────────────────────┘    └────────────┬────────────┘
-                                                             ▼
+                                                              ▼
 ┌──────────────┐    ┌──────────────────────┐    ┌─────────────────────────┐
 │  Resposta    │ ◀──│  geração.py          │ ◀──│  retrieval.py           │
 │  Markdown    │    │  LLM (Groq/Ollama)   │    │  busca semântica (k=5)  │
 └──────────────┘    └──────────────────────┘    └────────────┬────────────┘
-                                                             ▼
-                                             ┌─────────────────────────────┐
-                                             │  vectorstore (JSON, 190     │
-                                             │  chunks) — embeddings       │
-                                             │  Ollama nomic-embed-text    │
-                                             └─────────────────────────────┘
+                                                              ▼
+                                              ┌─────────────────────────────┐
+                                              │  vectorstore (JSON, 190     │
+                                              │  chunks) — embeddings       │
+                                              │  Ollama nomic-embed-text    │
+                                              └─────────────────────────────┘
+                                              ┌─────────────────────────────┐
+                                              │  apoio BM25 (isolado)       │
+                                              │  RRF fusion + limiar BM25   │
+                                              └─────────────────────────────┘
 ```
 
 ### Estrutura de diretórios
@@ -56,19 +64,19 @@ agente_Ynuyasha/
 ├── interface/
 │   └── app.py                   # Interface web Gradio (streaming + contexto RAG)
 ├── data/
-│   ├── dataset/                 # CSVs gerados pelas consultas
-│   ├── documentos/              # Arquivos de apoio ao pipeline
-│   ├── vectorstore/             # Embeddings persistidos (JSON)
+│   ├── dataset/                 # CSVs gerados pelas consultas às APIs astronômicas
+│   ├── documentos/              # Arquivos de apoio ao pipeline (BM25 corpus)
+│   ├── vectorstore/             # Embeddings persistidos (JSON) — não versionado no git
 │   └── avaliacao/               # Benchmark, resultados e logs de uso
 ├── src/
 │   ├── consultas/               # Scripts de coleta de dados (API)
 │   └── tratamento/
-│       ├── loading.py           # Carrega e divide documentos
-│       ├── embeddings.py        # Modelo de embedding (Ollama)
+│       ├── loading.py           # Carrega e divide documentos em chunks (até 2000 chars, overlap 100)
+│       ├── embeddings.py        # Modelo de embedding (Ollama nomic-embed-text)
 │       ├── base_vetorial.py     # Cria/persiste a vectorstore (com lock anti-rebuild concorrente e checkpoints)
-│       ├── retrieval.py         # Busca semântica por similaridade + merge com o apoio
-│       ├── documentos_apoio.py  # Corpus de apoio (data/documentos): parsers + BM25
-│       ├── geração.py           # Geração de resposta (Groq/Ollama)
+│       ├── retrieval.py         # Busca semântica por similaridade + merge com o apoio BM25 via RRF
+│       ├── documentos_apoio.py  # Corpus de apoio (data/documentos): parsers + BM25 próprio
+│       ├── geração.py           # Geração de resposta (Groq/Ollama) com pós-processamento Markdown
 │       ├── agente.py            # Pipeline completo (retrieval → geração) + CLI
 │       ├── avaliacao.py         # Benchmark, métricas, relatório Markdown, log/feedback
 │       ├── banner.py            # Banner compartilhado (terminal + interface web)
@@ -86,7 +94,7 @@ agente_Ynuyasha/
 | **Embeddings** | `embeddings.py` | Converte textos em vetores com `nomic-embed-text` (Ollama) |
 | **Indexação** | `base_vetorial.py` | Monta e persiste a vectorstore em JSON (190 chunks, com checkpoint) |
 | **Retrieval** | `retrieval.py` | Busca os trechos escoreando toda a base pelos vetores gravados (sem re-embedar), funde com o BM25 por RRF e descarta os que ficam abaixo do limiar `RAG_LIMIAR_RELEVANCIA` (0.65); perguntas de enumeração (ex.: "Liste...") usam janela maior via `k_para_pergunta`; perguntas de subconjunto-por-atributo (ex.: "Quais asteroides são potencialmente perigosos?") respondem via consulta determinística ao CSV (`_FILTROS_ATRIBUTO`), sem depender do ranking vetorial |
-| **Apoio** | `documentos_apoio.py` | Corpus auxiliar (`data/documentos/`) com parsers por arquivo (CSV linha a linha, sem pandas) e retriever BM25 próprio; anexa até `MAX_APOIO_CONTEXTO` itens ao contexto via `recuperar_contexto_com_apoio`, sem tocar na vectorstore |
+| **Apoio** | `documentos_apoio.py` | Corpus auxiliar (`data/documentos/`) com parsers por arquivo (CSV linha a linha, sem pandas) e retriever BM25 próprio; anexa até `MAX_APOIO_CONTEXTO` itens ao contexto via `recuperar_contexto_com_apoio`, sem tocar na vectorstore principal |
 | **Geração** | `geração.py` | Gera a resposta final em Markdown, citando fontes e linhas; pós-processa (`_aprimorar_markdown`) para garantir título `#`, seção `## Fontes` e organização por código |
 
 ---
@@ -95,7 +103,7 @@ agente_Ynuyasha/
 
 | Tecnologia | Uso |
 |---|---|
-| **Python 3.14** | Linguagem principal |
+| **Python 3.12** | Linguagem principal |
 | **LangChain** | Orquestração do pipeline RAG (core, splitter) |
 | **Ollama** | Embeddings (`nomic-embed-text`) e fallback de geração |
 | **Groq** | Geração principal (`openai/gpt-oss-120b`, reasoning) |
