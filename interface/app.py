@@ -8,20 +8,19 @@ RAIZ_PROJETO = Path(__file__).resolve().parents[1]
 if str(RAIZ_PROJETO) not in sys.path:
     sys.path.insert(0, str(RAIZ_PROJETO))
 
-import gradio as gr
+import gradio as gr  # noqa: E402
 
-from interface.portas import procurar_porta_livre
-from src.tratamento.agente import (
+from interface.portas import procurar_porta_livre  # noqa: E402
+from src.tratamento.agente import (  # noqa: E402
     NUM_PEDACOS,
     NUM_TROCAS_MEMORIA,
     preparar_contexto,
 )
-from src.tratamento.avaliacao import registrar_feedback
-from src.tratamento.banner import gerar_linhas_banner
-from src.tratamento.embeddings import aquecer_embeddings
-from src.tratamento.geração import gerar_resposta_stream
-from src.tratamento.status import verificar_status
-#corrigindo
+from src.tratamento.avaliacao import registrar_feedback  # noqa: E402
+from src.tratamento.banner import gerar_linhas_banner  # noqa: E402
+from src.tratamento.embeddings import aquecer_embeddings  # noqa: E402
+from src.tratamento.geração import gerar_resposta_stream  # noqa: E402
+from src.tratamento.status import verificar_status  # noqa: E402
 
 COMANDOS_SAIDA = {"sair", "quit", "exit", "adeus", "tchau"}
 
