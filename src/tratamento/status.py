@@ -80,7 +80,7 @@ def verificar_status(forcar_ollama: bool = False) -> dict:
     fingerprint_atual, sincronizado = _sincronia_datasets()
     return {
         "geracao": (
-            f"Groq ({os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')})"
+            f"Groq ({os.getenv('GROQ_MODEL', 'openai/gpt-oss-120b')})"
             if groq
             else f"Fallback Ollama ({_modelo_fallback()})"
         ),
@@ -90,7 +90,7 @@ def verificar_status(forcar_ollama: bool = False) -> dict:
         "rag_limiar": _limiar_rag(),
         "modelo_embedding": embeddings_model.model,
         "fallback": _modelo_fallback(),
-        "agente": "Agente ReAct (9 ferramentas)" if groq else "RAG simples",
+        "agente": "RAG simples",
         "fingerprint_atual": fingerprint_atual,
         "fingerprint_indexado": ler_fingerprint(),
         "datasets_sincronizados": sincronizado,
