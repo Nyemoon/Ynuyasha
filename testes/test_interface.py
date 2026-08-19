@@ -102,14 +102,14 @@ def test_montar_status_html_escapa_valores(monkeypatch):
 
 def test_responder_chat_pergunta_vazia():
     saida = next(app.responder_chat("", []))
-    assert len(saida) == 6
+    assert len(saida) == 8
     assert saida[0] == []
     assert saida[2] == "Pronto"
 
 
 def test_responder_chat_comando_saida():
     saida = next(app.responder_chat("sair", []))
-    assert len(saida) == 6
+    assert len(saida) == 8
     assert saida[0][-1]["role"] == "assistant"
     assert saida[2] == "Sessão encerrada"
 
@@ -123,11 +123,11 @@ def test_responder_chat_streaming(monkeypatch):
     )
     saidas = list(app.responder_chat("O que é um parsec?", []))
     final = saidas[-1]
-    assert len(final) == 6
+    assert len(final) == 8
     assert final[0][-1]["role"] == "assistant"
     assert final[0][-1]["content"] == "Olá mundo"
     assert final[4] == ["O que é um parsec?", "Olá mundo"]
-    assert final[5]["visible"] is False
+    assert final[5] == {"__type__": "update"}
 
 
 def test_responder_chat_envia_historico_recente_ao_retrieval(monkeypatch):
@@ -151,9 +151,9 @@ def test_responder_chat_envia_historico_recente_ao_retrieval(monkeypatch):
 
 def test_limpar_conversa_restaura_boas_vindas():
     saida = app.limpar_conversa()
-    assert len(saida) == 6
+    assert len(saida) == 8
     assert saida[0] == []
-    assert saida[5]["visible"] is True
+    assert saida[5] == {"__type__": "update"}
 
 
 def test_normalizar_historico_converte_blocos_do_chatbot():
