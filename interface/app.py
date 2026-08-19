@@ -21,6 +21,7 @@ from src.tratamento.banner import gerar_linhas_banner
 from src.tratamento.embeddings import aquecer_embeddings
 from src.tratamento.geração import gerar_resposta_stream
 from src.tratamento.status import verificar_status
+#corrigindo
 
 COMANDOS_SAIDA = {"sair", "quit", "exit", "adeus", "tchau"}
 
