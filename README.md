@@ -1,8 +1,8 @@
 # 🐕 Ynuyasha — Agente RAG de Astronomia
 
-![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)
-![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)
-![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](testes/)
 
 > **Ynuyasha** é um agente de inteligência artificial baseado em **RAG (Retrieval-Augmented Generation)** especializado em **astronomia**. Ele consulta uma base de conhecimento construída a partir de fontes científicas reais e responde em **português do Brasil**, de forma clara, acolhedora e descritiva, com **fontes citadas**.
 >
@@ -103,7 +103,7 @@ agente_Ynuyasha/
 
 | Tecnologia | Uso |
 |---|---|
-| **Python 3.12** | Linguagem principal |
+| **Python 3.14** | Linguagem principal |
 | **LangChain** | Orquestração do pipeline RAG (core, splitter) |
 | **Ollama** | Embeddings (`nomic-embed-text`) e fallback de geração |
 | **Groq** | Geração principal (`openai/gpt-oss-120b`, reasoning) |
@@ -554,7 +554,7 @@ O fluxo segue simples, apenas com garantias para ser honesto e resiliente:
 
 ### Recusa fora da base (não responder do conhecimento próprio)
 A recusa de perguntas fora da base é **imposta em código**, não só por instrução:
-**`geraçao.py`:** contexto vazio → o LLM nem é consultado; `gerar_resposta`
+**`geração.py`:** contexto vazio → o LLM nem é consultado; `gerar_resposta`
 e `gerar_resposta_stream` devolvem `MENSAGEM_FORA_DA_BASE`.
 
 ### Fallback de geração
