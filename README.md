@@ -1,6 +1,6 @@
 # 🐕 Ynuyasha — Agente RAG de Astronomia
 
-> **Ynuyasha** é um agente de inteligência artificial baseado em **RAG (Retrieval-Augmented Generation)** especializado em **astronomia**. Ele consulta uma base de conhecimento construída a partir de fontes científicas reais e responde em **português do Brasil**, de forma clara, objetiva e com **fontes citadas**.
+> **Ynuyasha** é um agente de inteligência artificial baseado em **RAG (Retrieval-Augmented Generation)** especializado em **astronomia**. Ele consulta uma base de conhecimento construída a partir de fontes científicas reais e responde em **português do Brasil**, de forma clara, acolhedora e descritiva, com **fontes citadas**.
 
 ---
 
@@ -10,10 +10,9 @@ O Ynuyasha é um assistente que roda **no terminal** e responde perguntas sobre 
 
 Para isso, o retriever filtra os trechos por um **limiar de relevância** (`RAG_LIMIAR_RELEVANCIA`, padrão **0.65**): perguntas cujo melhor trecho fique abaixo do limiar são tratadas como fora da base e o modelo responde educadamente que a informação **não consta na base de conhecimento**, sem responder com conhecimento próprio.
 
-A recusa é imposta **em código**, não apenas no prompt (gate de ancoragem):
+Além da base principal (`data/dataset/`), o agente consulta um **corpus de apoio** (`data/documentos/` — colunas do Exoplanet Archive e lista de planetas validados) via BM25 léxico. Esse corpus é **auxiliar e isolado**: não altera fingerprint, vectorstore nem exige rebuild (a base principal fica intacta); o apoio é anexado ao contexto apenas quando passa no limiar próprio `RAG_LIMIAR_APOIO_BM25` (padrão **8.0**), respeitando o teto `MAX_APOIO_CONTEXTO` (2 itens).
 
-- **Caminho RAG:** contexto vazio (abaixo do limiar) → o LLM **nem é chamado**; a resposta é a recusa padrão (`MENSAGEM_FORA_DA_BASE`).
-- **Caminho agente ReAct (Groq):** após o loop de ferramentas, a resposta só é aceita se estiver **ancorada** nos dados retornados pelas ferramentas — precisa conter **ao menos uma** citação `Fonte: <arquivo>, Linha X` que exista no retorno de alguma ferramenta (o retorno aceita também o formato RAG `fonte: <arquivo>, linha: <X>` emitido por `buscar_na_base`; citações no plural como `Fonte: X, Linhas 5, 7 e 10` são suportadas). Se **qualquer** citação for forjada (não estiver no retorno das ferramentas), a resposta é substituída pela recusa. Respostas sem nenhuma citação (com dados disponíveis) ou sem nenhum dado de ferramenta também são **substituídas pela recusa**. Em conversas com `thread_id`, apenas as ferramentas chamadas **no turno atual** ancoram a resposta. Isso vale também em conversas com `thread_id` (memória persistente).
+A recusa é imposta **em código**, não apenas no prompt: com contexto vazio (abaixo do limiar) o LLM **nem é chamado**; a resposta é a recusa padrão (`MENSAGEM_FORA_DA_BASE`).
 
 A base de conhecimento é montada a partir de datasets reais obtidos de fontes como:
 
@@ -59,19 +58,18 @@ agente_Ynuyasha/
 ├── data/
 │   ├── dataset/                 # CSVs gerados pelas consultas
 │   ├── documentos/              # Arquivos de apoio ao pipeline
-│   └── vectorstore/             # Embeddings persistidos (JSON)
+│   ├── vectorstore/             # Embeddings persistidos (JSON)
+│   └── avaliacao/               # Benchmark, resultados e logs de uso
 ├── src/
 │   ├── consultas/               # Scripts de coleta de dados (API)
 │   └── tratamento/
 │       ├── loading.py           # Carrega e divide documentos
 │       ├── embeddings.py        # Modelo de embedding (Ollama)
 │       ├── base_vetorial.py     # Cria/persiste a vectorstore (com lock anti-rebuild concorrente e checkpoints)
-│       ├── retrieval.py         # Busca semântica por similaridade
+│       ├── retrieval.py         # Busca semântica por similaridade + merge com o apoio
+│       ├── documentos_apoio.py  # Corpus de apoio (data/documentos): parsers + BM25
 │       ├── geração.py           # Geração de resposta (Groq/Ollama)
-│       ├── agente.py            # Pipeline completo (retrieval → geração)
-│       ├── agente_ia.py         # Agente ReAct com tool-calling (grafo LangGraph + memória)
-│       ├── ferramentas.py       # 9 ferramentas que leem os CSVs diretamente
-│       ├── memoria.py           # Checkpointer SQLite/MemorySaver + novo_thread_id
+│       ├── agente.py            # Pipeline completo (retrieval → geração) + CLI
 │       ├── avaliacao.py         # Benchmark, métricas, relatório Markdown, log/feedback
 │       ├── banner.py            # Banner compartilhado (terminal + interface web)
 │       ├── testar_velocidade.py # Benchmark da velocidade dos embeddings
@@ -87,8 +85,9 @@ agente_Ynuyasha/
 | **Ingestão** | `loading.py` | Lê os CSVs e converte cada linha em texto semântico (template por dataset), com chunks de até 2000 caracteres (overlap 100) |
 | **Embeddings** | `embeddings.py` | Converte textos em vetores com `nomic-embed-text` (Ollama) |
 | **Indexação** | `base_vetorial.py` | Monta e persiste a vectorstore em JSON (190 chunks, com checkpoint) |
-| **Retrieval** | `retrieval.py` | Busca os trechos fundindo busca vetorial + BM25 (RRF); re-escoreia com embeddings apenas o topo dos candidatos só-BM25 (`MAX_REESCORE`) e descarta os que ficam abaixo do limiar `RAG_LIMIAR_RELEVANCIA` (0.65) |
-| **Geração** | `geração.py` | Gera a resposta final em Markdown, citando fontes e linhas |
+| **Retrieval** | `retrieval.py` | Busca os trechos escoreando toda a base pelos vetores gravados (sem re-embedar), funde com o BM25 por RRF e descarta os que ficam abaixo do limiar `RAG_LIMIAR_RELEVANCIA` (0.65); perguntas de enumeração (ex.: "Liste...") usam janela maior via `k_para_pergunta`; perguntas de subconjunto-por-atributo (ex.: "Quais asteroides são potencialmente perigosos?") respondem via consulta determinística ao CSV (`_FILTROS_ATRIBUTO`), sem depender do ranking vetorial |
+| **Apoio** | `documentos_apoio.py` | Corpus auxiliar (`data/documentos/`) com parsers por arquivo (CSV linha a linha, sem pandas) e retriever BM25 próprio; anexa até `MAX_APOIO_CONTEXTO` itens ao contexto via `recuperar_contexto_com_apoio`, sem tocar na vectorstore |
+| **Geração** | `geração.py` | Gera a resposta final em Markdown, citando fontes e linhas; pós-processa (`_aprimorar_markdown`) para garantir título `#`, seção `## Fontes` e organização por código |
 
 ---
 
@@ -99,7 +98,7 @@ agente_Ynuyasha/
 | **Python 3.14** | Linguagem principal |
 | **LangChain** | Orquestração do pipeline RAG (core, splitter) |
 | **Ollama** | Embeddings (`nomic-embed-text`) e fallback de geração |
-| **Groq** | Geração principal (`llama-3.3-70b-versatile`) |
+| **Groq** | Geração principal (`openai/gpt-oss-120b`, reasoning) |
 | **Rich** | Interface visual no terminal (tabelas, painéis, Markdown) |
 | **Questionary** | Menus e prompts interativos |
 | **Pyfiglet** | Banner ASCII do Ynuyasha |
@@ -113,7 +112,9 @@ agente_Ynuyasha/
   ollama pull nomic-embed-text
   ```
 - **Chave Groq** (opcional — sem ela, o agente usa o fallback local do Ollama):
-  preencher `GROQ_API_KEY` no arquivo `.env`.
+  preencher `GROQ_API_KEY` no arquivo `.env`. O modelo padrão é
+  `openai/gpt-oss-120b` (configurável via `GROQ_MODEL`); o esforço de raciocínio
+  é ajustável via `GROQ_REASONING_EFFORT` (`low`/`medium`/`high`).
 
 ---
 
@@ -123,12 +124,9 @@ Quando `GROQ_API_KEY` não está definida no `.env` — ou quando a Groq falha d
 uma resposta — a geração usa um **modelo local do Ollama**. Os embeddings continuam
 sendo feitos pelo `nomic-embed-text`; somente a **geração de texto** é que muda.
 
-No caminho do agente ReAct (`agente_ia.executar_agente`), falhas da Groq são
-tratadas com **fallback automático**: qualquer exceção (limite de tokens/quota
-429, `tool_use_failed` 400, queda de rede) faz o turno degradar para o fluxo RAG
-local (`_degradar_rag` → `preparar_contexto` + `gerar_resposta`), que por sua vez
-tem fallback Groq→Ollama. O modo do turno (`groq`, `fallback_ollama`) é
-registrado nos metadados de observabilidade.
+Falhas da Groq (limite de tokens/quota 429, queda de rede, instabilidade) fazem
+`geração.gerar_resposta` alternar automaticamente para o fallback local. O modo do
+turno (`groq`, `fallback_ollama`) é registrado nos metadados de observabilidade.
 
 - **Padrão:** `smollm2:360m` (leve, roda em CPU).
 - **Primeira vez:** baixe o modelo padrão com:
@@ -213,6 +211,10 @@ python -m src.tratamento.testar_velocidade
 
 ## 💬 Exemplos de Respostas do Agente
 
+> Os exemplos abaixo ilustram o estilo (Markdown, negrito nos termos-chave e
+> fontes citadas). Desde a **norma descritiva**, cada dado citado ganha ainda uma
+> frase a mais de explicação (o que significa e por que importa).
+
 ### Exemplo 1 — Pergunta: *"O que é um parsec?"*
 
 > **## Definição de Parsec**
@@ -269,6 +271,13 @@ python -m src.tratamento.testar_velocidade
 ---
 
 ## ❓ Exemplos de Perguntas que o Ynuyasha Responde
+
+### Sobre o próprio agente
+- Quem é você?
+- O que é o Ynuyasha?
+- Como você funciona?
+- O que você sabe fazer?
+- Qual a sua base de conhecimento?
 
 ### Exoplanetas e estrelas
 - Qual o método de descoberta do Kepler-452 b?
@@ -328,9 +337,11 @@ Além do terminal, o Ynuyasha agora pode ser usado por um **navegador** com uma 
 
 - 🖼️ **Banner do Ynuyasha** — o mesmo banner do terminal (cachorrinho + nome em ASCII colorido, via `src/tratamento/banner.py`) é exibido no topo da página.
 - 💬 **Chat com streaming** — a resposta aparece token a token, renderizada em Markdown.
+- 🎨 **Tela de boas-vindas com cards** — antes da primeira pergunta, um cartão de boas-vindas apresenta 4 tópicos clicáveis (parsec, método de trânsito, TRAPPIST-1 e, asteroides); clicar já envia a pergunta.
+- 📋 **Copiar resposta** — cada mensagem do agente tem um botão de cópia embutido no próprio chat.
 - 🔍 **Painel de contexto RAG** — os 5 pedaços recuperados (fonte, linha e relevância) ficam visíveis para auditoria; quando a pergunta não consta na base, o painel informa que nenhum trecho relevante foi encontrado.
-- 💡 **Perguntas sugeridas** — exemplos clicáveis para começar a conversa.
-- ⚙️ **Status do sistema** — motor de geração (Groq/fallback Ollama), servidor Ollama e nº de documentos na vectorstore.
+- 💡 **Perguntas sugeridas** — exemplos clicáveis na barra lateral para começar a conversa.
+- ⚙️ **Status do sistema** — painel com badges visuais: motor de geração (Groq/fallback Ollama), status do Ollama, nº de documentos na vectorstore e sincronia dos datasets.
 - 🌙 **Comandos de saída** — digitar `sair`, `quit` ou `exit` encerra a conversa educadamente.
 
 ### Como executar
@@ -343,98 +354,76 @@ python interface/app.py
 python interface/app.py --port 7860 --share
 ```
 
-Acesse no navegador em `http://127.0.0.1:7860`.
+A porta padrão é a **7860**; se estiver ocupada, a interface **escolhe automaticamente a próxima porta livre** (7861, 7862, ...) e imprime a URL correta no terminal — sem falhas de inicialização.
 
 > 💡 A interface também pode ser iniciada pelo menu do CLI (**opção 7**).
 
 ---
 
-## 🧠 Agente de IA (tool-calling)
+## 🧠 Agente de IA (RAG simples)
 
-A **Fase G1** transforma o Ynuyasha em um **agente ReAct** com *tool-calling* quando
-há uma chave Groq configurada: o modelo decide qual ferramenta consultar, executa a
-busca e responde com base no resultado — sem passar pelos embeddings do Ollama, o que
-deixa perguntas estruturadas (ex.: *"o que é um parsec?"*) quase instantâneas.
+Desde a simplificação, o Ynuyasha usa **somente o fluxo RAG clássico**: para cada
+pergunta, o retriever recupera os trechos mais relevantes da base de conhecimento
+(embeddings + BM25, fusão RRF) e o LLM gera a resposta ancorada nesses trechos.
+Não há agente ReAct, ferramentas externas nem gate de ancoragem com parsing de
+citações — o prompt instrui o modelo a responder apenas com base no contexto.
 
-### Arquitetura
+### Norma descritiva
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  agente_ia.py — StateGraph(MessagesState)  recursion_limit=6        │
-│                                                                      │
-│   agente (ChatGroq.bind_tools)  →  tools_condition  →  ferramentas   │
-│        ▲                                          │   (ToolNode)      │
-│        └────────────────  loop  ◀─────────────────┘                  │
-└──────────────────────────────────────────────────────────────────────┘
-        │                                      │
-        ▼                                      ▼
-  sem Groq → degrada para RAG clássico   ferramentas.py (9 tools)
-  (preparar_contexto + gerar_resposta)   leem os CSVs diretamente
-```
+O prompt pede que o Ynuyasha **amplie a descrição de cada informação do contexto**:
+para cada número, classificação ou termo técnico citado, ele acrescenta **pelo
+menos uma frase** explicando o que significa e por que importa para a pergunta
+(equivalente a ≈ **25% a mais de descrição** por resposta). Isso vale apenas para
+o que está no contexto — ele não inventa nem repete trechos irrelevantes.
 
-### As 9 ferramentas (`src/tratamento/ferramentas.py`)
+### Respostas sobre o próprio Ynuyasha
 
-| Ferramenta | Dataset (CSV) | Pesquisa por |
-|---|---|---|
-| `consultar_planetas` | `planetas_e_estrelas_rag.csv` | nome do planeta/estrela |
-| `consultar_habitabilidade` | `habitabilidade_exoplanetas.csv` | nome do planeta |
-| `consultar_asteroides` | `asteroides_cometas_jpl.csv` | nome do corpo |
-| `consultar_constelacao` | `constelacoes_iau.csv` | nome/sigla da constelação |
-| `consultar_glossario` | `glossario_astronomico_conceitos.csv` | termo científico |
-| `consultar_objeto_simbad` | `estrelas_e_objetos_simbad.csv` | identificador (M 31...) |
-| `consultar_estrelas_gaia` | `estrelas_proximas_gaia.csv` | id Gaia DR3 |
-| `consultar_eventos` | `eventos_transientes_extremos.csv` | identificador/tipo (QSO...) |
-| `buscar_na_base` | RAG (recuperar_contexto) | pergunta livre em toda a base |
-
-Cada consulta devolve até 5 linhas no formato texto legível + **`Fonte: <arquivo>, Linha X`**,
-que o agente preserva nas citações (mesma convenção da RAG).
-
-### Degradação segura (sem Groq)
-
-- Sem `GROQ_API_KEY` (ou com o placeholder `sua_chave_aqui`), `agente.py:responder()`
-  mantém o fluxo RAG clássico (recuperação → geração) — comportamento inalterado.
-- O grafo é compilado **uma única vez** e cacheado (singleton), e o LLM com ferramentas
-  vinculadas também é reutilizado entre chamadas.
-
-### Interface web (Gradio)
-
-Com Groq disponível, o chat da interface também passa pelo agente ReAct (resposta rápida
-por ferramentas); sem Groq, mantém o streaming RAG com o painel de contexto.
+Perguntas sobre ele mesmo (*"Quem é você?"*, *"O que é o Ynuyasha?"*,
+*"Como você funciona?"*, *"Qual a sua base de conhecimento?"*) são reconhecidas
+antes da recuperação: o agente responde com o próprio **conhecimento sobre si**
+(identidade, dados acessados, fontes e como ele funciona) em vez de recusar como
+pergunta fora da base. A detecção é feita por padrões em pt-BR
+(`_e_pergunta_sobre_si` em `src/tratamento/geração.py`).
 
 ### Uso
 
 ```bash
-# Terminal (rota automática: Groq → agente; senão → RAG)
+# Terminal — uma pergunta ou conversa contínua
 python -m src.tratamento.agente "Qual a definição de parsec?"
-python -m src.tratamento.agente "Quais asteroides são potencialmente perigosos?"
-
-# Painel de status mostra o modo ativo:
-#   "Agente ReAct (9 ferramentas)" (com Groq) ou "RAG simples" (sem Groq)
+python -m src.tratamento.agente  # modo interativo
 ```
+
+O painel de status mostra o modo **"RAG simples"**.
 
 ---
 
 ## 📊 Avaliação e métricas
 
-A **Fase H** adiciona uma avaliação quantitativa do agente, com um *benchmark*
+O Ynuyasha possui uma avaliação quantitativa do pipeline, com um *benchmark*
 de perguntas em pt-BR e um gerador de relatório em Markdown.
 
 ### Benchmark (`data/avaliacao/benchmark.json`)
 
-- **~30 perguntas** cobrindo os **8 datasets** (planetas, habitabilidade,
+- Perguntas cobrindo os **8 datasets** (planetas, habitabilidade,
   asteroides, constelações, glossário, SIMBAD, Gaia e eventos) com
   `linhas_esperadas` — os índices (0-based) das linhas dos CSVs que a resposta
-  correta deve citar.
+  correta deve citar. Casos de enumeração declarada (ex.: listar todos os
+  planetas de trânsito) aceitam um `k` próprio para a recuperação.
 - **Casos "fora da base"** — perguntas cuja resposta correta é recusar
   educadamente (teste de honestidade).
+- **Seção `apoio`** — perguntas sobre `data/documentos/` (lista de planetas
+  validados e colunas do Exoplanet Archive) com `linhas_esperadas` no corpus de
+  apoio; um caso pode declarar `arquivos` (lista) quando a informação é
+  documentada de forma idêntica em mais de um arquivo — qualquer deles é aceito.
+  Os casos "fora da base" também exigem apoio vazio (gate duplo).
 
 ### Camadas avaliadas (`src/tratamento/avaliacao.py`)
 
 | Camada | Como | Métricas |
 |---|---|---|
-| **Ferramentas (offline)** | `.invoke` real nos CSVs, conferindo as citações `Fonte: <arquivo>, Linha X` | recall, precisão, MRR, nDCG, hit@1 |
 | **Retrieval (RAG)** | `recuperar_contexto` real, comparando metadados `(source, row)` | recall@k, precisão@k, MRR, nDCG@k, hit@1 |
-| **Agente (--online)** | `executar_agente` via Groq, validando citação/substring | citação correta / recusa honesta |
+| **Apoio (material de apoio)** | componente BM25 (`RecuperadorApoio.buscar`) sobre `data/documentos/`, comparando `(source, row)` | recall@k, precisão@k, MRR, nDCG@k, hit@1 |
+| **Fora da base** | perguntas sem trechos relevantes não geram citações (recusa honesta) | citações / recusa |
 
 As métricas são funções puras sobre conjuntos de chaves `(source, row)`, o que
 permite testes herméticos com fakes.
@@ -442,51 +431,35 @@ permite testes herméticos com fakes.
 ### Como rodar
 
 ```bash
-# Offline (ferramentas + fora da base; a seção de retrieval é pulada sem a
-# base vetorial/Ollama disponível)
+# A seção de retrieval é pulada sem a base vetorial/Ollama disponível;
+# a seção "apoio" roda só com o corpus de data/documentos (BM25)
 python -m src.tratamento.avaliacao
-
-# Online — inclui a camada de agente via Groq (requer GROQ_API_KEY)
-python -m src.tratamento.avaliacao --online
 
 # Testes automatizados da avaliação (herméticos, sem Ollama)
 python -m pytest testes/test_avaliacao.py -q
 ```
 
 > ⚠️ A seção **Retrieval** usa embeddings do Ollama; se você não quiser
-> sobrecarregar a máquina, use apenas o modo offline ou os testes.
+> sobrecarregar a máquina, verifique apenas os casos fora da base.
 
 O relatório é salvo em `data/avaliacao/resultados/resultado_<timestamp>.md`
 (facilita comparar a evolução entre fases).
 
 ---
 
-## 🧠 Memória persistente
+## 🧠 Memória de conversa
 
-O agente mantém **histórico entre turnos** graças a um checkpointer do
-LangGraph (`src/tratamento/memoria.py`):
+O Ynuyasha mantém **histórico entre turnos** em memória, repassando as últimas
+trocas da conversa ao LLM a cada resposta:
 
-- **Persistência real:** `SqliteSaver` em `data/checkpoints/conversas.sqlite`
-  (sobrevive a reinícios do processo).
-- **Fallback:** `MemorySaver` em memória quando o pacote sqlite não está
-  disponível (ex.: testes herméticos).
-- `novo_thread_id()` gera identificadores únicos de sessão.
-
-### Como funciona
-
-- `agente_ia.executar_agente(..., thread_id=...)` compila o grafo com o
-  checkpointer e **ancora o estado pelo `thread_id`**: o `SystemMessage` é
-  injetado apenas quando o estado da thread está vazio (via `get_state`).
-- **Sem `thread_id`**, o comportamento anterior é mantido (System + histórico
-  explícito, sem persistência).
-- **CLI** (`src/tratamento/agente.py`): uma thread por sessão; o comando
-  `nova conversa` reinicia a memória.
-- **Interface web** (`interface/app.py`): uma thread por janela; o botão
+- **CLI** (`src/tratamento/agente.py`): o histórico da sessão é mantido pela
+  própria thread; o comando `nova conversa` reinicia a memória.
+- **Interface web** (`interface/app.py`): uma conversa por janela; o botão
   "Limpar conversa" reinicia a sessão.
 
 ```bash
-# Testes da memória (MemorySaver + FakeLLM, sem Ollama/Groq)
-python -m pytest testes/test_memoria.py -q
+# Testes herméticos (sem Ollama/Groq)
+python -m pytest testes/ -q
 ```
 
 ---
@@ -513,72 +486,76 @@ python -m pytest testes/test_memoria.py -q
 - Banner do Ynuyasha compartilhado com o terminal (ASCII colorido) ✔
 - Lançamento via `python interface/app.py` e opção 7 do menu CLI ✔
 
-**Fase G1 concluída** — agente ReAct com tool-calling (Groq):
-- 9 ferramentas que leem os CSVs diretamente (respostas rápidas) ✔
-- Grafo LangGraph com loop agente → ferramentas (recursion_limit=6) ✔
-- Degradação segura para RAG sem Groq ✔
-- Status "Agente ReAct (9 ferramentas)" / "RAG simples" no painel ✔
-- Interface web roteada pelo agente quando a Groq está disponível ✔
-
-**Fase H concluída** — avaliação quantitativa + memória persistente:
-- Benchmark com ~30 perguntas cobrindo os 8 datasets + casos fora da base ✔
+**Fase H concluída** — avaliação quantitativa:
+- Benchmark cobrindo os 8 datasets + casos fora da base ✔
 - Métricas (recall, precisão, MRR, nDCG, hit@1) e relatório Markdown ✔
-- Avaliação offline (ferramentas) e opcional --online (agente via Groq) ✔
-- Checkpointer SQLite (data/checkpoints/conversas.sqlite) + fallback MemorySaver ✔
-- Thread por sessão no CLI e por janela na interface; "nova conversa" reinicia ✔
+- Avaliação via RAG (retrieval) + teste de honestidade ✔
 
 **Fase I concluída** — robustez e observabilidade (mantendo o agente simples):
-- Poda de memória (últimas N mensagens ao LLM; System preservado) ✔
-- Fallback automático: se a ferramenta específica não achar, tenta `buscar_na_base` ✔
-- Fallback automático por erro da Groq (quota 429, `tool_use_failed`, rede) → RAG/Ollama local ✔
-- **Gate de ancoragem**: respostas sem dados/citação da base são substituídas pela recusa (sem conhecimento próprio do modelo); citações no plural são aceitas e citações forjadas são bloqueadas ✔
+- Fallback automático por erro da Groq (quota 429, rede) → Ollama local ✔
+- **Recusa fora da base em código**: contexto vazio → o LLM nem é chamado;
+  a resposta é a recusa padrão (sem conhecimento próprio do modelo) ✔
 - Log por turno em CSV (desligado por padrão; `YNUYASHA_LOG_TURNOS=true`) ✔
 - Feedback 👍/👎 na interface web → `data/avaliacao/feedback.csv` ✔
 - Robustez de embeddings (timeout/keep-alive, cache de query, warm-up no boot) + lock anti-rebuild concorrente ✔
 
+**Fase J concluída** — corpus de apoio (`data/documentos/`) e Markdown por código:
+- `documentos_apoio.py`: parsers por arquivo (lista de planetas validados + 4
+  CSVs de colunas do Exoplanet Archive, lidos linha a linha com o módulo `csv`) ✔
+- Retriever BM25 próprio (tokenização sem stopwords, `k1=1.2`/`b=0.6`) anexado ao
+  contexto via `recuperar_contexto_com_apoio`, com gate duplo
+  `RAG_LIMIAR_APOIO_BM25` e teto `MAX_APOIO_CONTEXTO` — **sem invalidar a
+  vectorstore principal** (fingerprint/status intactos) ✔
+- **Markdown por código**: `_aprimorar_markdown` garante título `#` e a seção
+  `## Fontes` com as fontes reais do contexto (`gerar_resposta` e streaming) ✔
+- Benchmark com a seção `apoio` (11 casos sobre `data/documentos/` + honestidade
+  do apoio) e guard test que re-deriva as linhas esperadas dos arquivos reais ✔
+
+**Fase K concluída** — recusa honesta além do limiar (gate duplo):
+- `LIMIAR_FORCA` (`RAG_LIMIAR_FORCA`, 0.68) + sobreposição lexical: ruído com
+  cosseno alto mas sem termo em comum com a pergunta é descartado em código ✔
+- Validação end-to-end via Groq para fatos e enumerações (paralaxe, trânsito,
+  zona habitável, TRAPPIST-1 e, Kepler-452) ✔
+
+**Fase L concluída** — retrieval determinístico (subconjuntos e fatos):
+- Perguntas de atributo ("na zona habitável?", "potencialmente perigosos?",
+  "quasares/púlsares/supernovas", "método de trânsito") resolvidas por filtro
+  direto ao CSV, sem depender de ranking ✔
+- Fatos por entidade ("O TRAPPIST-1 e está na zona habitável?") resolvidos por
+  nome da entidade no arquivo — sai do problema das linhas quase idênticas ✔
+
+**Fase M concluída** — avaliação do apoio isolada no componente:
+- `avaliar_apoio` mede o próprio BM25 (`RecuperadorApoio.buscar`), não a posição
+  no contexto combinado ✔
+- Texto dos mapas reescrito sem preâmbulo comum (menos ruído no BM25) ✔
+- Casos de colunas documentadas em mais de um arquivo aceitam `arquivos` (lista):
+  pl_name (PS), disc_year, fpl_name (Composite retiring), pl_disc (Confirmed
+  retiring); perguntas corrigidas para as tabelas reais ✔
+
+**Simplificação (RAG puro):**
+- Agente ReAct, ferramentas e gate de ancoragem removidos — toda resposta vem de
+  `recuperar_contexto → gerar_resposta` ✔
+- Prompt de sistema reescrito: natural e consistente, sem regras contraditórias ✔
+- Memória de conversa em sessão (CLI/Gradio) sem checkpointer SQLite ✔
+
 ---
 
-## 🧪 Fase I — robustez e observabilidade
+## 🧪 Robustez e observabilidade
 
-A **Fase I** deixa o agente mais robusto e observável, sem complicar a arquitetura.
+O fluxo segue simples, apenas com garantias para ser honesto e resiliente:
 
-### Poda de memória (contexto)
-Em conversas longas, apenas as últimas `LIMITE_MENSAGENS_AGENTE` (12) mensagens são
-enviadas ao LLM a cada invocação (`agente_ia._ultimas_mensagens`), preservando sempre
-o `SystemMessage`. O checkpointer continua guardando o histórico completo no sqlite.
-
-### Fallback automático (não recusar cedo demais)
-O `PROMPT_AGENTE` agora instrui: se uma ferramenta específica retornar
-"Nenhum registro…", chame `buscar_na_base` com a pergunta original antes de
-concluir que a informação não existe.
-
-### Gate de ancoragem (não responder do conhecimento próprio)
+### Recusa fora da base (não responder do conhecimento próprio)
 A recusa de perguntas fora da base é **imposta em código**, não só por instrução:
+**`geraçao.py`:** contexto vazio → o LLM nem é consultado; `gerar_resposta`
+e `gerar_resposta_stream` devolvem `MENSAGEM_FORA_DA_BASE`.
 
-- **RAG (`geraçao.py`):** contexto vazio → o LLM nem é consultado; `gerar_resposta`
-  e `gerar_resposta_stream` devolvem `MENSAGEM_FORA_DA_BASE`.
-- **Agente ReAct (`agente_ia.py`):** após o `grafo.invoke`, `_verificar_ancoragem`
-  aceita a resposta se ela tiver **pelo menos uma** citação `Fonte: <arquivo>,
-  Linha X` presente no retorno real das ferramentas (retorno tolera o formato RAG
-  `fonte: <arquivo>, linha: <X>` de `buscar_na_base`). Citações no plural — ex.:
-  `Fonte: X, Linhas 5, 7 e 10` — são interpretadas corretamente pelo parser
-  (`_extrair_citacoes_resposta`). Se **qualquer** citação for forjada (não vier das
-  ferramentas), a resposta é substituída pela recusa; respostas sem citação (com
-  dados disponíveis) ou sem nenhum dado de ferramenta também são barradas. Com
-  `thread_id`, o gate considera apenas as ferramentas do turno atual.
-
-> A regra foi relaxada para **não transformar respostas corretas em recusa**: antes
-> era exigido que todas as citações da resposta existissem no retorno das ferramentas,
-> o que descartava respostas válidas (ex.: Groq agrupando linhas no plural). Agora
-> basta uma citação válida e **nenhuma** forjada — o bloqueio a fontes inventadas é
-> mantido.
-
-Isso garante o comportamento documentado no início do README: responder **apenas**
-com base na base de conhecimento, mesmo quando o modelo "saberia" a resposta.
+### Fallback de geração
+Falhas da Groq (quota 429, rede, instabilidade) fazem `geraçao.py` alternar
+automaticamente para o modelo local do Ollama (`OLLAMA_FALLBACK_MODEL`).
 
 ### Log por turno (desligado por padrão)
-Grava cada turno (modo, ferramentas chamadas, citação, latência, pergunta e
-resposta) em `data/avaliacao/turnos_log.csv`. **Desligado por padrão**:
+Grava cada turno (modo, citação, latência, pergunta e resposta) em
+`data/avaliacao/turnos_log.csv`. **Desligado por padrão**:
 
 ```env
 # .env — ative para registrar cada turno
