@@ -53,10 +53,10 @@ def test_verificar_status_inclui_novos_campos(monkeypatch):
     assert resultado["datasets_sincronizados"] is True
 
 
-def test_verificar_status_agente_react_com_groq(monkeypatch):
+def test_verificar_status_agente_sempre_rag(monkeypatch):
     monkeypatch.setattr(status, "_ollama_online", lambda forcar=False: False)
     monkeypatch.setattr(status, "_groq_configurada", lambda: True)
     monkeypatch.setattr(status, "calcular_fingerprint_datasets", lambda: "abc")
     monkeypatch.setattr(status, "ler_fingerprint", lambda: "abc")
     resultado = status.verificar_status()
-    assert resultado["agente"] == "Agente ReAct (9 ferramentas)"
+    assert resultado["agente"] == "RAG simples"
