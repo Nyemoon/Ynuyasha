@@ -571,10 +571,20 @@ YNUYASHA_LOG_TURNOS=true
 ```
 
 Use `false` (ou deixe sem a variável) para manter o comportamento silencioso.
-
 ### Feedback na interface web
-Ao lado do chat há botões **👍/👎** que gravam a avaliação da última resposta em
+
+Ao lado do chat há botões **"gostei" (verde)** e **"não gostei" (vermelho)** que gravam a avaliação da última resposta em
 `data/avaliacao/feedback.csv` — material para futuras rodadas de avaliação.
 
 Os arquivos `turnos_log.csv` e `feedback.csv` não são versionados (dados de uso);
 os relatórios de avaliação continuam em `data/avaliacao/resultados/`.
+
+## 🚀 Deploy e Acesso (OCI)
+A aplicação está hospedada em uma instância Always Free na Oracle Cloud Infrastructure (OCI), configurada com inicialização automática via `systemd` para alta disponibilidade.
+
+* **URL de Acesso:** [http://ynuyasha.144.22.184.44.sslip.io]
+
+### Evidência de Execução
+![Ynuyasha OCI](ynuyasha_oci.png)
+
+---
