@@ -1,0 +1,3 @@
+144.22.184.44.sslip.io {
+    reverse_proxy ynuyasha:7860
+}

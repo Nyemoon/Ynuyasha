@@ -846,9 +846,9 @@ def main() -> None:
     print(f"Ynuyasha — Interface web em http://127.0.0.1:{porta}")
     
     demo.launch(
-        server_name="127.0.0.1",
-        server_port=porta,
-        share=args.share,
+        server_name="0.0.0.0",
+        server_port=7860,
+        share=False,
         footer_links=[],
         theme=TEMA,
         css=CSS,
