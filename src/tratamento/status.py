@@ -27,7 +27,7 @@ def _modelo_fallback() -> str:
     return os.getenv("OLLAMA_FALLBACK_MODEL", "smollm2:360m")
 
 
-_OLLAMA_URL = "http://localhost:11434/api/tags"
+_OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434/api/tags")
 _OLLAMA_CACHE_TTL = 30.0
 _ultima_verificacao_ollama = 0.0
 _cache_ollama_online = False

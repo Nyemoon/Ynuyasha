@@ -1,4 +1,5 @@
 import httpx
+import os
 from langchain_ollama import OllamaEmbeddings
 
 from src.tratamento.loading import obter_pedacos
@@ -8,7 +9,7 @@ from src.tratamento.loading import obter_pedacos
 # gerações longas, e o pool com keep-alive reduz a latência por query.
 embeddings_model = OllamaEmbeddings(
     model="nomic-embed-text",
-    base_url="http://localhost:11434",
+    base_url=os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434"),
     keep_alive=1800,
     client_kwargs={
         "timeout": httpx.Timeout(900.0, connect=30.0, read=900.0, write=900.0, pool=30.0),

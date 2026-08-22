@@ -1,0 +1,3 @@
+ynuyasha.144.22.184.44.sslip.io {
+    reverse_proxy host.docker.internal:7860
+} 
